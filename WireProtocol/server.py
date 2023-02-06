@@ -76,6 +76,20 @@ def handleMessage(message, conn, addr):
         else:
             print("Returning user: " + username)
 
+    # handle a general message
+    if message.startswith("MESSAGE|"):
+        list = message.split("|")
+        usernameFrom = list[1]
+        usernameTo = list[2]
+        msg = list[3]
+        msgToSend = "<" + usernameFrom +"> " + msg
+        if usernameTo in known_users:
+            known_users[usernameTo][0].send(msgToSend)
+        elif usernameTo == "TO_ALL":
+            broadcast(msgToSend, conn)
+        else:
+            conn.send("User: " + username + " does not exist. Did not send message")
+
     # list all the current users
     elif message.startswith("LIST|"):
         print("requesting list of users: " + str(known_users))

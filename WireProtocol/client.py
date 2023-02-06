@@ -31,9 +31,15 @@ def handleMessage(msg):
     elif msg.startswith("delete"):
         deleteAcct = msg.split(" ")
         return "DELETE|" + deleteAcct[1]
+    elif msg.startswith(">>"):
+        msgList = msg.split(":")
+        usernameToSend1 = msgList[0].replace(">", "")
+        usernameToSend = usernameToSend1.replace(" ", "")
+        msgText = msgList[1]
+        return "MESSAGE|" +  username +"|" + usernameToSend + "|" + msgText
 
     else: 
-        return msg
+        return "MESSAGE|"+ username+"|TO_ALL|" + msg
  
 while True:
  

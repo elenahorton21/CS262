@@ -23,16 +23,16 @@ Note: the protocol requires that the client first registers their username upon 
 
 #### Send a message
 
-`MESSAGE|username`
+`MESSAGE|usernameFrom|usernameTo|[message]`
 
-Note: if a username is not specified, then the message is broadcast to all users. 
+Note: if a `usernameTo` is not specified, then the message is broadcast to all users. 
 
 
 ### Client Usage
 
 #### Send a message
 
-Private messages must be specified by the user with `username: [message]`. If `username: ` is not specified, then whatever text is entered will be broadcast to all users.
+Private messages must be specified by the user with `>> username: [message]`. If `username: ` is not specified, then whatever text is entered will be broadcast to all users. It is very important to indicate that you are sending to a specific recipient by clarifying `>>` followed by the desired recipient `username`. 
 
 #### List accounts
 
