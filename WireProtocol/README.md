@@ -25,7 +25,7 @@ Note: the protocol requires that the client first registers their username upon 
 
 `MESSAGE|usernameFrom|usernameTo|[message]`
 
-Note: if a `usernameTo` is not specified, then the message is broadcast to all users. 
+Note: if a `usernameTo` is not specified, then the message is broadcast to all users. The server interprets this by the client auto filling the `usernameTo` field as `TO_ALL`. 
 
 
 ### Client Usage
