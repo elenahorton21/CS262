@@ -32,7 +32,7 @@ Note: if a `usernameTo` is not specified, then the message is broadcast to all u
 
 #### Send a message
 
-Private messages must be specified by the user with `>> username: [message]`. If `username: ` is not specified, then whatever text is entered will be broadcast to all users. It is very important to indicate that you are sending to a specific recipient by clarifying `>>` followed by the desired recipient `username`. 
+Private messages must be specified by the user with `>> username: [message]`. If `>> username:` is not specified, then whatever text is entered will be broadcast to all users. It is very important to indicate that you are sending to a specific recipient by clarifying `>>` followed by the desired recipient `username`. 
 
 #### List accounts
 
@@ -40,5 +40,5 @@ Users must enter `list` to list all accounts or `list: [wildcard]` to list a sub
 
 #### Delete an account
 
-Users must enter `delete: [account]` to delete an account. They can delete their own account or any other known account (no security considerations). 
+Users must enter `delete [account]` to delete an account. They can delete their own account or any other known account (no security considerations). 
 
