@@ -28,6 +28,7 @@ def clientthread(conn, addr):
 
     conn.send("Welcome to this chatroom!")
  
+    # main message handling loop for each client/server thread
     while True:
             try:
                 message = conn.recv(2048)
@@ -51,7 +52,6 @@ def broadcast(message, connection):
 # reverse hastable lookup to get the username
 def get_connection_username(conn):
     for key in known_users:
-        print(key)
         if known_users[key][0] == conn:
             return str(key)
     return "No found username for connection."
@@ -60,7 +60,7 @@ def get_connection_username(conn):
 # remove a connection
 def remove(connection):
     if connection in list_of_clients:
-        conn.send("You are being removed. Bye!")
+        connection.send("You are being removed. Bye!")
         list_of_clients.remove(connection)
 
 
@@ -77,7 +77,7 @@ def handleMessage(message, conn, addr):
             print("Returning user: " + username)
 
     # handle a general message
-    if message.startswith("MESSAGE|"):
+    elif message.startswith("MESSAGE|"):
         list = message.split("|")
         usernameFrom = list[1]
         usernameTo = list[2]
@@ -131,9 +131,9 @@ while True:
     # prints the address of the user that just connected
     print (addr[0] + " connected")
  
-    # creates and individual thread for every user
-    # that connects
+    # creates a new thread for every user that connects to be concurrent
     start_new_thread(clientthread,(conn,addr))    
  
+# clean up
 conn.close()
 server.close()
