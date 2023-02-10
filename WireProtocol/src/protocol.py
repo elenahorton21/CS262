@@ -1,5 +1,6 @@
 """
 Defines message schema.
+NOTE: We can modify these classes to encode header-body messages to handle potential buffer issues.
 TODO: Probably want to have the conversion to bytes handled better.
 TODO: Refactor shared components.
 TODO: We could separate out the code for client and server messages, but not sure it's necessary.
@@ -55,7 +56,8 @@ class ChatMessage(Message):
         Putting this here in case we have some formatting stuff, e.g. removing
         certain characters.
         """
-        return BroadcastMessage(text=self.text)
+        direct = (self.recipient != None)
+        return BroadcastMessage(sender=self.sender, direct=direct, text=self.text)
 
         
 class ListMessage(Message):
@@ -91,11 +93,11 @@ class ResponseMessage(Message):
     enc_header = "RES"
 
     def __init__(self, success, error=None):
-        self.success = success # 1 is true, 0 is false
+        self.success = success # Boolean
         self.error = error if error else ""
 
     def encode_(self):
-        out_str = self.separator_token.join([self.enc_header, str(self.success), self.error])
+        out_str = self.separator_token.join([self.enc_header, str(int(self.success)), self.error])
         return out_str.encode()
 
 
@@ -105,11 +107,14 @@ class BroadcastMessage(Message):
     """
     enc_header = "BROAD"
 
-    def __init__(self, text):
+    def __init__(self, sender, text, direct):
+        self.sender = sender
         self.text = text
+        self.direct = direct
 
     def encode_(self):
-        out_str = self.separator_token.join([self.enc_header, self.text])
+        direct_enc = str(int(self.direct))
+        out_str = self.separator_token.join([self.enc_header, self.sender, direct_enc, self.text])
         return out_str.encode()
 
 
@@ -140,8 +145,8 @@ def decode_server_message(msg):
     msg = msg.decode() # Need to convert back to string
     content = msg.split(Message.separator_token)
     if content[0] == ResponseMessage.enc_header:
-        return ResponseMessage(success=content[1], error=content[2])
+        return ResponseMessage(success=bool(int(content[1])), error=content[2])
     elif content[0] == BroadcastMessage.enc_header:
-        return BroadcastMessage(text=content[1])
+        return BroadcastMessage(sender=content[1], direct=bool(int(content[2])), text=content[3])
     else:
         raise ValueError("Unknown message type header received from server.")
