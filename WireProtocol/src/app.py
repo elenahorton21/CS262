@@ -14,10 +14,29 @@ class AppState:
 
   def _get_connection_username(self, conn):
     for key, value in self.connections.items():
-      if value == conn:
-        return key
+        if value == conn:
+            return key
 
     raise ValueError("No username found for connection")
+
+  def is_valid_user(self, username):
+    """
+    Returns True if username is registered, regardless of whether there 
+    is an active connection.
+    """
+    return (username in self.users)
+  
+  def get_all_connections(self):
+    """Return sockets for all active users."""
+    return list(self.connections.values())
+
+  def get_user_connection(self, username):
+    """Return the socket for username or raise a KeyError."""
+    try:
+      return self.connections[username]
+    except KeyError as _:
+      # If the user is not in users, return None
+      return None
 
   def register_user(self, username):
     if username in self.users:
@@ -51,6 +70,16 @@ class AppState:
     self.connections.pop(username)
 
   def queue_message(self, username, msg):
+    """
+    Queue a message to be delivered when the user logs in.
+
+    Args:
+        username (str): The username of the recipient.
+        msg (BroadcastMessage): The message to deliver.
+
+    Returns:
+        None
+    """
     if username not in self.users:
       raise ValueError("Username does not exist.")
     

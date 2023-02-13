@@ -1,10 +1,16 @@
+"""
+Implementation of server for chat application.
+
+TODO: Wondering if we need to nest every interaction with AppState
+in a function that uses locks.
+"""
 import socket
 from threading import Thread, Lock
 import logging
 
 from protocol import *
 from config import config
-from app import AppState as ChatApp
+from app import AppState
 
 
 # Logging config
@@ -16,6 +22,7 @@ logging.basicConfig(level=logging.DEBUG,
 SERVER_HOST = config["SERVER_HOST"]
 SERVER_PORT = config["SERVER_PORT"]
 MAX_BUFFER_SIZE = config["MAX_BUFFER_SIZE"]
+MAX_NUM_CONNECTIONS = config["MAX_NUM_CONNECTIONS"]
 
 
 # initialize list/set of all connected client's sockets
@@ -27,13 +34,78 @@ s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 # bind the socket to the address we specified
 s.bind((SERVER_HOST, SERVER_PORT))
 # listen for upcoming connections
-s.listen(5)
+s.listen(MAX_NUM_CONNECTIONS)
 print(f"[*] Listening as {SERVER_HOST}:{SERVER_PORT}")
 
 # Initialize app state
-app = ChatApp()
+app = AppState() # TODO: Change name
 
-def handle_message(msg, app, socket):    
+
+def _broadcast_to_all(msg, app):
+    """
+    Send a message to all active users. Ignores connections that haven't 
+    registed a username.
+
+    Args:
+        msg (BroadcastMessage): The message to send.
+        app (AppState): The current app state, which includes active user info.
+
+    Returns:
+        None
+    """
+    # Check that the message is an instance of BroadcastMessage
+    assert isinstance(msg, BroadcastMessage)
+
+    recv_conns = app.get_all_connections()
+    encoded_msg = msg.encode_()
+    for conn in recv_conns:
+        conn.send(encoded_msg)
+
+
+def _handle_chat_message(msg, app, socket):
+    """
+    Receives a ChatMessage. Returns an error response if the recipient
+    does not exist. Queues the message if recipient is not active. Otherwise
+    broadcast to recipient (or all if recipient is None).
+
+    Args:
+        msg (ChatMessage): The message received from client.
+        app (AppState)
+        socket (Socket): The socket that server received message from.
+    
+    Returns:
+        None
+    """
+    # If recipient was not specified, broadcast to all active users
+    if not msg.recipient:
+        broadcast_msg = msg.to_broadcast()
+        # TODO: Should we send a success response back to the sender?
+        _broadcast_to_all(broadcast_msg, app)
+
+    # If the user does not exist, return an error response to sender
+    elif not app.is_valid_user(msg.recipient):
+        res = ResponseMessage(success=0, error="User does not exist.")
+        socket.send(res.encode_())
+
+    # If the recipient exists and is active, send the message to their socket.
+    # Otherwise add the message to their message queue.
+    else:
+        recv_conn = app.get_user_connection(msg.recipient) # Returns None if no active connection
+        if not recv_conn:
+            app.queue_message(msg.recipient, msg.to_broadcast())
+        else:
+            # Send the message to both sender and recipient
+            recv_conns = [recv_conn, socket]
+            encoded_msg = msg.to_broadcast().encode_()
+            for conn in recv_conns:
+                conn.send(encoded_msg)
+
+    
+def handle_message(msg, app, socket):
+    # TODO: Maybe we should return error to the client if 
+    # message couldn't be decoded here.
+    print(f"Handling message")
+
     if isinstance(msg, RegisterMessage):
         try:
             is_existing = app.add_connection(msg.username, socket)
@@ -46,60 +118,43 @@ def handle_message(msg, app, socket):
             socket.send(res.encode_())
             # If existing user, check if we need to send msg queue
             if is_existing and msg.username in app.msg_queue:
+                # TODO: Should delete the corresponding messages once they are delivered
                 for msg in app.msg_queue[msg.username]:
                     socket.send(msg.encode_())
-        
-
     elif isinstance(msg, ChatMessage):
-        # TODO: Need a special symbol for `TO ALL` that can't be a username
-        # TODO: Do we need a custom function to wrap this in lock?
-        # TODO: Probably want to move this logic somewhere else and clean up.
-        if not msg.recipient:
-            recv_conns = app.connections.values()
-        else:
-            # If there is no user, return an error response. 
-            if msg.recipient not in app.users:
-                res = ResponseMessage(success=0, error="User does not exist.")
-                socket.send(res.encode_()) 
-            
-            # If user exists but is not logged in, add to message queue.
-            #  Otherwise, deliver immediately.
-            recv_conn = app.connections.get(msg.recipient, [])
-            if not recv_conn:
-                app.queue_message(msg.recipient, msg.to_broadcast())
-
-            # Send to the recipient and self. If recipient is not active just send to self.
-            recv_conns = recv_conn + [socket] 
-
-        broadcast = msg.to_broadcast().encode_()
-        for sock in recv_conns:
-            sock.send(broadcast)
+        _handle_chat_message(msg, app, socket)
+    else:
+        raise NotImplementedError
 
 
 def _disconnect_client(socket, app):
     """Remove the socket from active connections in app state."""
     client_sockets.remove(socket)
     app.remove_connection(socket)
+    print(f"Removed {socket}")
 
 
 def client_thread(cs, app_state):
     """
     This function keep listening for a message from `cs` socket
-    Whenever a message is received, broadcast it to all other connected clients
     TODO: Handle disconnected clients.
     """
     while True:
         try:
             # keep listening for a message from `cs` socket
             buffer = cs.recv(MAX_BUFFER_SIZE)
-            msg = decode_client_message(buffer)
+            if not buffer:
+                print("Empty buffer")
+                _disconnect_client(cs, app_state)
+            else:
+                msg = decode_client_message(buffer)
         except KeyError as e:
             # If the client has disconnected, remove connection
             print(f"[!] Error: {e}")
-            _disconnect_client(cs, app_state)
+            # _disconnect_client(cs, app_state)
         except ValueError as e:
             print(f"[!] Error: {e}")
-            _disconnect_client(cs, app_state)
+            # _disconnect_client(cs, app_state)
         else:
             handle_message(msg, app_state, cs)
 
