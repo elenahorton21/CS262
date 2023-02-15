@@ -100,31 +100,47 @@ def _handle_chat_message(msg, app, socket):
             for conn in recv_conns:
                 conn.send(encoded_msg)
 
+
+def _handle_register_message(msg, app, socket):
+    try:
+        is_existing = app.add_connection(msg.username, socket)
+    except ValueError as e:
+        print(e)
+        res = ResponseMessage(success=True, error= str(e))
+        socket.send(res.encode_())
+    else:
+        res = ResponseMessage(success=False)
+        socket.send(res.encode_())
+        # If existing user, check if we need to send msg queue
+        if is_existing and msg.username in app.msg_queue:
+            # TODO: Should delete the corresponding messages once they are delivered
+            for msg in app.msg_queue[msg.username]:
+                socket.send(msg.encode_())
+
+
+def _handle_list_message(msg, app, socket):
+    """
+    Handle ListMessage.
+    TODO: Change to wildcard functionality. Right now this just lists all users.
+    """
     
+
 def handle_message(msg, app, socket):
-    # TODO: Maybe we should return error to the client if 
-    # message couldn't be decoded here.
     print(f"Handling message")
 
-    if isinstance(msg, RegisterMessage):
-        try:
-            is_existing = app.add_connection(msg.username, socket)
-        except ValueError as e:
-            print(e)
-            res = ResponseMessage(success=0, error= str(e))
-            socket.send(res.encode_())
-        else:
-            res = ResponseMessage(success=1)
-            socket.send(res.encode_())
-            # If existing user, check if we need to send msg queue
-            if is_existing and msg.username in app.msg_queue:
-                # TODO: Should delete the corresponding messages once they are delivered
-                for msg in app.msg_queue[msg.username]:
-                    socket.send(msg.encode_())
-    elif isinstance(msg, ChatMessage):
-        _handle_chat_message(msg, app, socket)
+    # Try to decode message. If this fails, return an error response.
+    try:
+        msg = decode_client_message(msg)
+    except ValueError as e:
+        res = ResponseMessage(success=False, error=str(e))
+        socket.send(res.encode_())
     else:
-        raise NotImplementedError
+        if isinstance(msg, RegisterMessage):
+            _handle_register_message(msg, app, socket)
+        elif isinstance(msg, ChatMessage):
+            _handle_chat_message(msg, app, socket)
+        else:
+            raise NotImplementedError
 
 
 def _disconnect_client(socket, app):
@@ -144,19 +160,16 @@ def client_thread(cs, app_state):
             # keep listening for a message from `cs` socket
             buffer = cs.recv(MAX_BUFFER_SIZE)
             if not buffer:
+                # This should only happen if client disconnects
                 print("Empty buffer")
                 _disconnect_client(cs, app_state)
             else:
-                msg = decode_client_message(buffer)
-        except KeyError as e:
-            # If the client has disconnected, remove connection
+                handle_message(buffer, app_state, cs)
+        except Exception as e:
+            # TODO: What exceptions could we get here?
             print(f"[!] Error: {e}")
             # _disconnect_client(cs, app_state)
-        except ValueError as e:
-            print(f"[!] Error: {e}")
-            # _disconnect_client(cs, app_state)
-        else:
-            handle_message(msg, app_state, cs)
+
 
 
 while True:

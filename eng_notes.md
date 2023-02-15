@@ -9,3 +9,8 @@
 - Do we need to send a response from client when a non-response message is sent to it, e.g. if server sends MESSAGE to client, client responses that message is received.
 
 - Doesn't seem like we can assume that send() and recv() use the whole buffer: https://stackoverflow.com/questions/67509709/is-recvbufsize-guaranteed-to-receive-all-the-data-if-sended-data-is-smaller-th
+
+Feb-13
+
+- Thinking about how to write the socket-related code in a way that allows for easier unit testing.
+
