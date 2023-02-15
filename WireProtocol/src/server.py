@@ -67,6 +67,9 @@ def _handle_chat_message(msg, app, socket):
     Receives a ChatMessage. Returns an error response if the recipient
     does not exist. Queues the message if recipient is not active. Otherwise
     broadcast to recipient (or all if recipient is None).
+    
+    TODO: Right now this only sends a ChatResponse if the username does not exist.
+    Does not send success responses.
 
     Args:
         msg (ChatMessage): The message received from client.
@@ -84,7 +87,7 @@ def _handle_chat_message(msg, app, socket):
 
     # If the user does not exist, return an error response to sender
     elif not app.is_valid_user(msg.recipient):
-        res = ResponseMessage(success=0, error="User does not exist.")
+        res = RegisterResponse(success=False, error="User does not exist.")
         socket.send(res.encode_())
 
     # If the recipient exists and is active, send the message to their socket.
@@ -106,12 +109,13 @@ def _handle_register_message(msg, app, socket):
         is_existing = app.add_connection(msg.username, socket)
     except ValueError as e:
         print(e)
-        res = ResponseMessage(success=True, error= str(e))
+        res = RegisterResponse(success=False, error=str(e))
         socket.send(res.encode_())
     else:
-        res = ResponseMessage(success=False)
+        res = RegisterResponse(success=True)
         socket.send(res.encode_())
         # If existing user, check if we need to send msg queue
+        # TODO: Test that this works properly.
         if is_existing and msg.username in app.msg_queue:
             # TODO: Should delete the corresponding messages once they are delivered
             for msg in app.msg_queue[msg.username]:
@@ -123,7 +127,23 @@ def _handle_list_message(msg, app, socket):
     Handle ListMessage.
     TODO: Change to wildcard functionality. Right now this just lists all users.
     """
-    
+    users = app.list_users()
+    res = ListResponse(success=True, users=users)
+    socket.send(res.encode_())
+
+
+def _handle_delete_message(msg, app, socket):
+    """Handle DeleteMessage.
+    TODO: Does not handle the case where the user is connected.
+    """
+    if not app.is_valid_user(msg.user):
+        res = DeleteResponse(success=False, error="User does not exist.")
+        socket.send(res.encode_())
+    else:
+        app.delete_user(msg.user)
+        res = DeleteResponse(success=True)
+        socket.send(res.encode_())
+
 
 def handle_message(msg, app, socket):
     print(f"Handling message")
@@ -132,7 +152,9 @@ def handle_message(msg, app, socket):
     try:
         msg = decode_client_message(msg)
     except ValueError as e:
-        res = ResponseMessage(success=False, error=str(e))
+        # TODO: Unsure if we should be sending a response, or just
+        # ignoring messages that can't be decoded.
+        res = Response(success=False, error=str(e))
         socket.send(res.encode_())
     else:
         if isinstance(msg, RegisterMessage):
@@ -169,7 +191,6 @@ def client_thread(cs, app_state):
             # TODO: What exceptions could we get here?
             print(f"[!] Error: {e}")
             # _disconnect_client(cs, app_state)
-
 
 
 while True:

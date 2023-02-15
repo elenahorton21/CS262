@@ -1,9 +1,11 @@
 """
 Defines message schema.
 NOTE: We can modify these classes to encode header-body messages to handle potential buffer issues.
+TODO: Add check that encoded message is smaller than `MAX_BUFFER_SIZE`.
 TODO: Probably want to have the conversion to bytes handled better.
 TODO: Refactor shared components.
-TODO: We could separate out the code for client and server messages, but not sure it's necessary.
+TODO: We should use smaller `enc_header` values, e.g. integers.
+TODO: Unsure about design of Response messages.
 """
 
 class Message:
@@ -63,11 +65,12 @@ class ChatMessage(Message):
 class ListMessage(Message):
     enc_header = "LIST"
 
-    def __init__(self, wildcard):
+    def __init__(self, wildcard=None):
         self.wildcard = wildcard
 
     def encode_(self):
-        out_str = self.separator_token.join([self.enc_header, self.wildcard])
+        str_items = [self.enc_header, self.wildcard] if self.wildcard else [self.enc_header]
+        out_str = self.separator_token.join(str_items)
         return out_str.encode()
 
 
@@ -86,9 +89,10 @@ class DeleteMessage(Message):
 ### Server Messages
 ####################
 
-class ResponseMessage(Message):
+class Response(Message):
     """
-    TODO: We may want to refactor this into a class for response to each kind of message.
+    Base class for server responses to messages. Each Response object has
+    a `success` and `error` field.
     """
     enc_header = "RES"
 
@@ -99,6 +103,38 @@ class ResponseMessage(Message):
     def encode_(self):
         out_str = self.separator_token.join([self.enc_header, str(int(self.success)), self.error])
         return out_str.encode()
+
+
+class RegisterResponse(Response):
+    """Response format for registering username."""
+    enc_header = "RES-R"
+
+
+class ChatResponse(Response):
+    """Response format for chat messages."""
+    enc_header = "RES-C"
+
+
+class ListResponse(Response):
+    """Response format for listing users."""
+    enc_header = "RES-L"
+
+    def __init__(self, success, error=None, users=[]):
+        """
+        Args:
+            users ([str]): List of usernames.
+        """
+        super().__init__(success, error)
+        self.users = users
+    
+    def encode_(self):
+        str_items = [self.enc_header, str(int(self.success)), self.error] + self.users
+        out_str = self.separator_token.join(str_items)
+        return out_str.encode()
+    
+
+class DeleteResponse(Response):
+    enc_header = "RES-D"
 
 
 class BroadcastMessage(Message):
@@ -116,8 +152,6 @@ class BroadcastMessage(Message):
         direct_enc = str(int(self.direct))
         out_str = self.separator_token.join([self.enc_header, self.sender, direct_enc, self.text])
         return out_str.encode()
-
-
 
 
 ####################
@@ -146,8 +180,15 @@ def decode_server_message(msg):
     """Factory method for converting read buffer data on client side to appropriate Message subclass."""
     msg = msg.decode() # Need to convert back to string
     content = msg.split(Message.separator_token)
-    if content[0] == ResponseMessage.enc_header:
-        return ResponseMessage(success=bool(int(content[1])), error=content[2])
+    if content[0] == RegisterResponse.enc_header:
+        return RegisterResponse(success=bool(int(content[1])), error=content[2])
+    elif content[0] == ChatResponse.enc_header:
+        return ChatResponse(success=bool(int(content[1])), error=content[2])
+    elif content[0] == DeleteResponse.enc_header:
+        return DeleteResponse(success=bool(int(content[1])), error=content[2])
+    elif content[0] == ListResponse.enc_header:
+        users = content[3:]
+        return ListResponse(success=bool(int(content[1])), error=content[2], users=users)
     elif content[0] == BroadcastMessage.enc_header:
         return BroadcastMessage(sender=content[1], direct=bool(int(content[2])), text=content[3])
     else:

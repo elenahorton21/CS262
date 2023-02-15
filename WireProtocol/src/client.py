@@ -58,7 +58,7 @@ def _display_message(msg):
             print(f"<<{msg.sender}: {msg.text}")
         else:
             print(f"{msg.sender}: {msg.text}")
-    elif isinstance(msg, ResponseMessage):
+    elif isinstance(msg, Response):
         # If it's an error response, print the error
         if msg.success:
             print(f"Error: {msg.error}")
@@ -90,7 +90,11 @@ def _message_from_input(input, username):
     TODO: Cleaner handling of converting input to message data, e.g. strip whitespace.
     """
     if input.startswith("/list"):
-        return ListMessage(wildcard=input.split(" ")[1])
+        if len(input.split([" "])) == 1:
+            wildcard = None
+        else:
+            wildcard = input.split(" ")[1]
+        return ListMessage(wildcard=wildcard)
     elif input.startswith("/delete"):
         return DeleteMessage(username=input.split(" ")[1])
     # user requesting to send a direct message to a specified recipient

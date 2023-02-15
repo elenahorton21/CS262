@@ -3,6 +3,7 @@ Defines logic for chat application state.
 
 TODO: Might want to make fields `private` and use getter/setter methods. Could
 be cleaner with the locking as well.
+TODO: Clean up and organize methods.
 """
 
 
@@ -19,13 +20,6 @@ class AppState:
 
     raise ValueError("No username found for connection")
 
-  def is_valid_user(self, username):
-    """
-    Returns True if username is registered, regardless of whether there 
-    is an active connection.
-    """
-    return (username in self.users)
-  
   def get_all_connections(self):
     """Return sockets for all active users."""
     return list(self.connections.values())
@@ -37,7 +31,17 @@ class AppState:
     except KeyError as _:
       # If the user is not in users, return None
       return None
-
+  
+  def list_users(self):
+    return list(self.users)
+  
+  def is_valid_user(self, username):
+    """
+    Returns True if username is registered, regardless of whether there 
+    is an active connection.
+    """
+    return (username in self.users)
+  
   def register_user(self, username):
     if username in self.users:
       raise ValueError("Username is already registered.")
@@ -45,6 +49,15 @@ class AppState:
       raise ValueError("Username must contain alphanumeric characters only.")
     else:
       self.users.add(username)
+
+  def delete_user(self, username):
+    """
+    Remove the username from the list of users and from message queue.
+    TODO: Decide how to handle the case where user is active, i.e. in 
+    self.connections.
+    """
+    self.users.remove(username)
+    self.msg_queue.pop(username)
 
   def add_connection(self, username, socket):
     """
