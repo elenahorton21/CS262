@@ -185,6 +185,7 @@ def client_thread(cs, app_state):
                 # This should only happen if client disconnects
                 print("Empty buffer")
                 _disconnect_client(cs, app_state)
+                return
             else:
                 handle_message(buffer, app_state, cs)
         except Exception as e:
