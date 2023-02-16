@@ -146,7 +146,7 @@ def _handle_delete_message(msg, app, socket):
 
 
 def handle_message(msg, app, socket):
-    logging.debug(f"Handling message from {socket}")
+    logging.debug(f"Handling message from {socket.getsockname()}")
 
     # Try to decode message. If this fails, return an error response.
     try:
@@ -173,7 +173,7 @@ def _disconnect_client(socket, app):
     """Remove the socket from active connections in app state."""
     client_sockets.remove(socket)
     app.remove_connection(socket)
-    print(f"Removed {socket}")
+    print(f"Removed {socket.getsockname()}")
 
 
 def client_thread(cs, app_state):
@@ -187,7 +187,7 @@ def client_thread(cs, app_state):
             buffer = cs.recv(MAX_BUFFER_SIZE)
             if not buffer:
                 # This should only happen if client disconnects
-                print("Empty buffer")
+                logging.debug("Received 0 bytes from socket.")
                 _disconnect_client(cs, app_state)
                 return
             else:
@@ -195,6 +195,7 @@ def client_thread(cs, app_state):
         except Exception as e:
             # TODO: What exceptions could we get here?
             print(f"[!] Error: {e}")
+            return
             # _disconnect_client(cs, app_state)
 
 

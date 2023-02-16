@@ -147,7 +147,7 @@ def run(IP_address, port):
                     if not data:
                         print("Server disconnected.")
                         return
-                    _read(socks)
+                    _read(data)
                 else:
                     input = sys.stdin.readline()
                     _write(server, input, username)
