@@ -169,7 +169,8 @@ def decode_client_message(msg):
         recipient = None if content[2] == "^" else content[2]
         return ChatMessage(sender=content[1], recipient=recipient, text=content[3])
     elif content[0] == ListMessage.enc_header:
-        return ListMessage(wildcard=content[1])
+        wildcard = content[1] if len(content) > 1 else None
+        return ListMessage(wildcard=wildcard)
     elif content[0] == DeleteMessage.enc_header:
         return DeleteMessage(username=content[1])
     else:
@@ -187,7 +188,7 @@ def decode_server_message(msg):
     elif content[0] == DeleteResponse.enc_header:
         return DeleteResponse(success=bool(int(content[1])), error=content[2])
     elif content[0] == ListResponse.enc_header:
-        users = content[3:]
+        users = content[3:] if len(content) > 2 else None
         return ListResponse(success=bool(int(content[1])), error=content[2], users=users)
     elif content[0] == BroadcastMessage.enc_header:
         return BroadcastMessage(sender=content[1], direct=bool(int(content[2])), text=content[3])

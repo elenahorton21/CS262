@@ -8,9 +8,15 @@ TODO: Better control, right now control flow is quite messy, e.g. using
 import socket
 import select
 import sys
+import logging
 
 from protocol import *
 from config import config
+
+
+# Logging
+logging.basicConfig(level=logging.DEBUG,
+                    format='(%(threadName)-9s) %(message)s',)
 
 
 # Configuration
@@ -57,14 +63,23 @@ def _display_message(msg):
     TODO: I think the format should look different
     """
     if isinstance(msg, BroadcastMessage):
-        # Different formating for 
+        # Different formating
         if msg.direct:
             print(f"<<{msg.sender}: {msg.text}")
         else:
             print(f"{msg.sender}: {msg.text}")
+    elif isinstance(msg, ListResponse):
+        for username in msg.users:
+            print(username)
+    elif isinstance(msg, DeleteResponse):
+        if not msg.success:
+            print(msg.error)
+        else:
+            print("Successfully deleted user.")
+    # This handles generic errors, but we shouldn't get any.
     elif isinstance(msg, Response):
         # If it's an error response, print the error
-        if msg.success:
+        if not msg.success:
             print(f"Error: {msg.error}")
     else:
         raise NotImplementedError
@@ -78,11 +93,10 @@ def _read(data):
     """
     try:
         msg = decode_server_message(data)
+    except ValueError as e:
+        logging.error(f"Unable to decode message: {e}")
+    else:
         _display_message(msg)
-    except Exception as e:
-        print(f"Error: {e}")
-    finally:
-        return True
 
 
 def _message_from_input(input, username):

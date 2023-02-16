@@ -136,11 +136,11 @@ def _handle_delete_message(msg, app, socket):
     """Handle DeleteMessage.
     TODO: Does not handle the case where the user is connected.
     """
-    if not app.is_valid_user(msg.user):
+    if not app.is_valid_user(msg.username):
         res = DeleteResponse(success=False, error="User does not exist.")
         socket.send(res.encode_())
     else:
-        app.delete_user(msg.user)
+        app.delete_user(msg.username)
         res = DeleteResponse(success=True)
         socket.send(res.encode_())
 
@@ -173,7 +173,7 @@ def _disconnect_client(socket, app):
     """Remove the socket from active connections in app state."""
     client_sockets.remove(socket)
     app.remove_connection(socket)
-    print(f"Removed {socket.getsockname()}")
+    logging.info(f"Removed {socket.getsockname()}")
 
 
 def client_thread(cs, app_state):
