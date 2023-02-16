@@ -146,7 +146,7 @@ def _handle_delete_message(msg, app, socket):
 
 
 def handle_message(msg, app, socket):
-    print(f"Handling message")
+    logging.debug(f"Handling message from {socket}")
 
     # Try to decode message. If this fails, return an error response.
     try:

@@ -66,22 +66,19 @@ def _display_message(msg):
         raise NotImplementedError
 
 
-def _read(socket):
+def _read(data):
     """
     Defines behavior for reading from server socket.
     TODO: Better error handling.
     TODO: Change this to calling a display function that can do custom formatting on Message class
     """
-    data = socket.recv(MAX_BUFFER_SIZE)
-    # If there is no data received, ignore
-    if not data:
-        return
-
     try:
         msg = decode_server_message(data)
         _display_message(msg)
     except Exception as e:
         print(f"Error: {e}")
+    finally:
+        return True
 
 
 def _message_from_input(input, username):
@@ -90,7 +87,7 @@ def _message_from_input(input, username):
     TODO: Cleaner handling of converting input to message data, e.g. strip whitespace.
     """
     if input.startswith("/list"):
-        if len(input.split([" "])) == 1:
+        if len(input.split(" ")) == 1:
             wildcard = None
         else:
             wildcard = input.split(" ")[1]
@@ -135,6 +132,11 @@ def run(IP_address, port):
         
             for socks in read_sockets:
                 if socks == server:
+                    data = socks.recv(MAX_BUFFER_SIZE)
+                    # If there is no data received, stop listening
+                    if not data:
+                        print("Server disconnected.")
+                        return
                     _read(socks)
                 else:
                     input = sys.stdin.readline()
