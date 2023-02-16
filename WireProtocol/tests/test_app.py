@@ -15,7 +15,7 @@ def app_state():
     """Returns an AppState instance with some populated data."""
     users = set(["John", "Jane", "Bob"])
     connections = {"John": 1, "Jane": 2}
-    msg_queue = {"Jane": ["Hello", "What's up?"]}
+    msg_queue = {"Bob": ["Hello", "What's up?"]}
 
     return AppState(users, connections, msg_queue)
 
@@ -60,14 +60,20 @@ def test_register_user(app_state):
     assert app_state._users == set(["John", "Jane", "Bob", "Dan"])
 
 def test_delete_user(app_state):
-    # Check that the correct exception is raised
-    with pytest.raises(InvalidUserError) as excinfo:
+    # Check that the correct exception is raised with unregistered username
+    with pytest.raises(InvalidUserError) as excinfo1:
         app_state.delete_user("Dan")
+    assert str(excinfo1.value) == "Username 'Dan' is not registered."
+    
+    # Check that the correct exception is raised with active user
+    with pytest.raises(ValueError) as excinfo2:
+        app_state.delete_user("Jane")
+    assert str(excinfo2.value) == "Cannot delete an active user."
 
     # Check that deleting a valid username is successful
-    app_state.delete_user("Jane")
-    app_state._msg_queue.get("Jane", None) == None
-    app_state._users == set(["John", "Bob"])
+    app_state.delete_user("Bob")
+    app_state._msg_queue.get("Bob", None) == None
+    app_state._users == set(["John", "Jane"])
 
 def test_add_connection(app_state):
     # Test adding a username currently being used
@@ -99,5 +105,5 @@ def test_queue_message(app_state):
     assert app_state._msg_queue['John'] == ["Hello"]
 
     # Test adding a message to existing queue
-    app_state.queue_message("Jane", "Hi")
-    assert app_state._msg_queue["Jane"] == ["Hello", "What's up?", "Hi"]
+    app_state.queue_message("Bob", "Hi")
+    assert app_state._msg_queue["Bob"] == ["Hello", "What's up?", "Hi"]

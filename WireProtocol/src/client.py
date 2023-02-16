@@ -111,6 +111,7 @@ def _message_from_input(input, username):
             wildcard = input.split(" ")[1]
         return ListMessage(wildcard=wildcard)
     elif input.startswith("/delete"):
+        input = input.strip()
         return DeleteMessage(username=input.split(" ")[1])
     # user requesting to send a direct message to a specified recipient
     elif input.startswith(">>"):

@@ -8,7 +8,8 @@ TODO: Implement locking for race conditions in SafeAppState class.
 
 class InvalidUserError(Exception):
     """Raised in cases where the username is invalid, i.e. not registered."""
-    pass
+    def __init__(self, msg='Username is not registered.', *args, **kwargs):
+        super().__init__(msg, *args, **kwargs)
 
 
 class AppState:
@@ -76,8 +77,6 @@ class AppState:
     def delete_user(self, username):
         """
         Remove the username from the list of users and from message queue.
-        TODO: Decide how to handle the case where user is active, i.e. in 
-        self.connections.
 
         Args:
             username (str): The user to delete.
@@ -87,12 +86,16 @@ class AppState:
 
         Raises:
             InvalidUserError: If user is not registered.
+            ValueError: If user is active.
         """
+        # Raise an error if username is not registered or is active
         if not self.is_valid_user(username):
-            raise InvalidUserError
+            raise InvalidUserError(f"Username '{username}' is not registered.")
+        if self.get_user_connection(username):
+            raise ValueError("Cannot delete an active user.")
         
         self._users.remove(username)
-        self._msg_queue.pop(username)
+        self._msg_queue.pop(username, None) # Pass a default so that KeyError is not raised
 
     def add_connection(self, username, socket):
         """

@@ -10,7 +10,7 @@ import logging
 
 from protocol import *
 from config import config
-from app import AppState
+from app import AppState, InvalidUserError
 
 
 # Logging config
@@ -65,7 +65,7 @@ def _broadcast_to_all(msg, app):
 def _handle_chat_message(msg, app, socket):
     """
     Receives a ChatMessage. Returns an error response if the recipient
-    does not exist. Queues the message if recipient is not active. Otherwise
+    does not exist, and queues the message if recipient is not active. Otherwise
     broadcast to recipient (or all if recipient is None).
     
     TODO: Right now this only sends a ChatResponse if the username does not exist.
@@ -133,16 +133,21 @@ def _handle_list_message(msg, app, socket):
 
 
 def _handle_delete_message(msg, app, socket):
-    """Handle DeleteMessage.
-    TODO: Does not handle the case where the user is connected.
-    TODO: Change to try/except with app.delete_user.
     """
-    if not app.is_valid_user(msg.user):
-        res = DeleteResponse(success=False, error="User does not exist.")
-        socket.send(res.encode_())
+    Handle DeleteMessage from client. Will return an error response if
+    the username does not exist, or if the user is active.
+    """
+    res = None
+    try:
+        app.delete_user(msg.username)
+    except InvalidUserError as e:
+        res = DeleteResponse(success=False, error=str(e))
+    except ValueError as e2:
+        res = DeleteResponse(success=False, error=str(e2))
     else:
-        app.delete_user(msg.user)
+        logging.info(f"User {msg.username} deleted.")
         res = DeleteResponse(success=True)
+    finally:
         socket.send(res.encode_())
 
 
@@ -183,20 +188,20 @@ def client_thread(cs, app_state):
     TODO: Handle disconnected clients.
     """
     while True:
-        try:
-            # keep listening for a message from `cs` socket
-            buffer = cs.recv(MAX_BUFFER_SIZE)
-            if not buffer:
-                # This should only happen if client disconnects
-                logging.debug("Received 0 bytes from socket.")
-                _disconnect_client(cs, app_state)
-                return
-            else:
-                handle_message(buffer, app_state, cs)
-        except Exception as e:
-            # TODO: What exceptions could we get here?
-            print(f"[!] Error: {e}")
+        # try:
+        # keep listening for a message from `cs` socket
+        buffer = cs.recv(MAX_BUFFER_SIZE)
+        if not buffer:
+            # This should only happen if client disconnects
+            logging.debug("Received 0 bytes from socket.")
+            _disconnect_client(cs, app_state)
             return
+        else:
+            handle_message(buffer, app_state, cs)
+        # except Exception as e:
+        #     # TODO: What exceptions could we get here?
+        #     print(f"[!] Error: {e}")
+        #     return
             # _disconnect_client(cs, app_state)
 
 
