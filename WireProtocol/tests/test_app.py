@@ -64,7 +64,7 @@ def test_delete_user(app_state):
     with pytest.raises(InvalidUserError) as excinfo1:
         app_state.delete_user("Dan")
     assert str(excinfo1.value) == "Username 'Dan' is not registered."
-    
+
     # Check that the correct exception is raised with active user
     with pytest.raises(ValueError) as excinfo2:
         app_state.delete_user("Jane")
@@ -74,6 +74,12 @@ def test_delete_user(app_state):
     app_state.delete_user("Bob")
     app_state._msg_queue.get("Bob", None) == None
     app_state._users == set(["John", "Jane"])
+
+    # Check that deleting a valid username without queued messages is successful
+    app_state._connections.pop("Jane") # Remove Jane from active connections
+    app_state.delete_user("Jane")
+    app_state._msg_queue.get("Jane", None) == None
+    app_state._users == set(["John"])
 
 def test_add_connection(app_state):
     # Test adding a username currently being used
