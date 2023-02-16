@@ -1,8 +1,9 @@
 """
 Python program to implement client side of chat application.
 
-TODO: How can the client know when the server has disconnected?
 TODO: Refactor to make cleaner.
+TODO: Better control, right now control flow is quite messy, e.g. using
+`return` to exit out of some loops.
 """
 import socket
 import select
@@ -36,6 +37,9 @@ def _authenticate(server):
         # from server will be ignored. 
         while True:
             res = server.recv(MAX_BUFFER_SIZE)
+            # If no bytes received, server has disconnected
+            if not res:
+                raise ConnectionError("Server has disconnected.")
             res = decode_server_message(res)
             # If success response, return the username for future use
             if res.success:
@@ -122,7 +126,13 @@ def run(IP_address, port):
         server.connect((IP_address, port)) # TODO: Handle exceptions
 
         # _authenticate will loop until a username is successfully registered
-        username = _authenticate(server)
+        # If the server disconnects during this process, it will raise ConnectionError
+        try:
+            username = _authenticate(server)
+        except ConnectionError as _:
+            print("Server disconnected.")
+            return
+
         print(f"Welcome to the chatroom {username}!")
 
         while True:
