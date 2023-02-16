@@ -135,12 +135,13 @@ def _handle_list_message(msg, app, socket):
 def _handle_delete_message(msg, app, socket):
     """Handle DeleteMessage.
     TODO: Does not handle the case where the user is connected.
+    TODO: Change to try/except with app.delete_user.
     """
-    if not app.is_valid_user(msg.username):
+    if not app.is_valid_user(msg.user):
         res = DeleteResponse(success=False, error="User does not exist.")
         socket.send(res.encode_())
     else:
-        app.delete_user(msg.username)
+        app.delete_user(msg.user)
         res = DeleteResponse(success=True)
         socket.send(res.encode_())
 
