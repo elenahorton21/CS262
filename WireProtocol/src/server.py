@@ -161,6 +161,10 @@ def handle_message(msg, app, socket):
             _handle_register_message(msg, app, socket)
         elif isinstance(msg, ChatMessage):
             _handle_chat_message(msg, app, socket)
+        elif isinstance(msg, ListMessage):
+            _handle_list_message(msg, app, socket)
+        elif isinstance(msg, DeleteMessage):
+            _handle_delete_message(msg, app, socket)
         else:
             raise NotImplementedError
 
