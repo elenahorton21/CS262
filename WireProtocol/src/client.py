@@ -3,7 +3,7 @@ Python program to implement client side of chat application.
 
 TODO: Refactor to make cleaner.
 TODO: Better control, right now control flow is quite messy, e.g. using
-`return` to exit out of some loops.
+`return` to exit out of some loops. Maybe use `exit()` instead?
 """
 import socket
 import select
