@@ -11,19 +11,28 @@ import chat_pb2
 import chat_pb2_grpc
 import grpc
 
-"MAX_BUFFER_SIZE": 1024
+MAX_BUFFER_SIZE = 1024
 
 
 def run():
-    # Initialize TCP socket
     with grpc.insecure_channel('localhost:50051') as channel:
         stub = chat_pb2_grpc.ChatStub(channel)
         response = None
         username = input("Enter your username:")
         response = stub.create_user(chat_pb2.UserRequest(username=username))
         print(f"Welcome to the chatroom {username}!")
+
+        while True:
+            sockets_list = [sys.stdin, stub]
+            read_sockets, write_socket, error_socket = select.select(sockets_list,[],[])
             
- 
+            for socks in read_sockets:
+                if socks == stub:
+                    print("INCOMING MESSAGE!")
+                else:
+                    newInput = sys.stdin.readline()
+                    print("READ! " + newInput)
+                
             
 
 if __name__ == "__main__":

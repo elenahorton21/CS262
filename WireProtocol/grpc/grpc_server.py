@@ -12,7 +12,7 @@ class Chat(chat_pb2_grpc.ChatServicer):
 
     def create_user(self, request, _context):
         username = request.username
-        print("CREATING USER", username)
+        print("New user: " + username)
         result = chatServer.create_user(username)
         response = "success!" if result else "failed to create new user :("
         return chat_pb2.ChatReply(message=response)
