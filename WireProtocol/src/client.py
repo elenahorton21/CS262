@@ -46,7 +46,12 @@ def _authenticate(server):
             # If no bytes received, server has disconnected
             if not res:
                 raise ConnectionError("Server has disconnected.")
-            res = decode_server_message(res)
+            res = decode_server_buffer(res)
+
+            # TODO: Right now we just assume that there is only one message
+            assert len(res) == 1
+            res = res[0]
+            
             # If success response, return the username for future use
             if res.success:
                 return username
@@ -76,31 +81,30 @@ def _display_message(msg):
             print(msg.error)
         else:
             print("Successfully deleted user.")
-    # This handles generic errors, but we shouldn't get any.
+    # This handles other error responses, but we shouldn't get any
     elif isinstance(msg, Response):
         # If it's an error response, print the error
         if not msg.success:
             print(f"Error: {msg.error}")
-        else:
-            print("YO")
     else:
         raise NotImplementedError
 
 
 def _read(data):
     """
-    Defines behavior for reading from server socket.
+    Defines behavior for reading from server socket. Buffer data is decoded into
+    a list of Message instances, which are then displayed.
     TODO: Better error handling.
     TODO: Change this to calling a display function that can do custom formatting on Message class
     """
-    print(data.decode())
-    print()
     try:
-        msg = decode_server_message(data)
+        msgs = decode_server_buffer(data)
     except ValueError as e:
         logging.error(f"Unable to decode message: {e}")
     else:
-        _display_message(msg)
+        # Iterate through the received messages and display
+        for msg in msgs:
+            _display_message(msg)
 
 
 def _message_from_input(input, username):

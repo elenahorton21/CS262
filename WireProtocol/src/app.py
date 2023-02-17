@@ -5,7 +5,6 @@ active connections, and queued messages for inactive users.
 TODO: Implement locking for race conditions in SafeAppState class.
 """
 
-
 class InvalidUserError(Exception):
     """Raised in cases where the username is invalid, i.e. not registered."""
     def __init__(self, msg='Username is not registered.', *args, **kwargs):
@@ -61,7 +60,7 @@ class AppState:
         
         return self._connections.get(username, None)
   
-    def list_users(self, wildcard):
+    def list_users(self, wildcard=None):
         """
         Return a list of all registered usernames.
         TODO: Handle wildcards.

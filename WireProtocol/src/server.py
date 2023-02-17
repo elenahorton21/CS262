@@ -1,9 +1,5 @@
 """
 Implementation of server for chat application.
-
-TODO: Move socket out of handle functions, handle functions instead return
-response.
-TODO: Create a broadcast function.
 """
 import socket
 from threading import Thread
@@ -65,12 +61,11 @@ def broadcast(msg, recvs):
 def _handle_register_message(msg, app, socket):
     """
     Handle a RegisterMessage from client.
-    TODO: This no longer handles delivering queued messages.
     """
     try:
         is_existing = app.add_connection(msg.username, socket)
     except ValueError as e:
-        logging.debug(f"Cannot register username: {e}")
+        logging.debug(f"Cannot register username '{msg.username}': {e}")
         res = RegisterResponse(success=False, error=str(e))
     else:
         res = RegisterResponse(success=True)
@@ -135,7 +130,7 @@ def _handle_list_message(msg, app):
 def _handle_delete_message(msg, app):
     """
     Handle DeleteMessage from client. Will return an error response if
-    the username does not exist, or if the user is active.
+    the username does not exist or the user is active.
 
     Args:
         msg (DeleteMessage): The delete message from client.
@@ -168,7 +163,11 @@ def handle_message(msg, app, socket):
 
     # Try to decode message
     try:
-        msg = decode_client_message(msg)
+        # TODO: Right now we are assuming that only one message
+        # is sent.
+        msgs = decode_client_buffer(msg)
+        assert (len(msgs) == 1)
+        msg = msgs[0]
     # If decoding fails, return an error response to client    
     except ValueError as e:
         res = Response(success=False, error=str(e))
@@ -199,13 +198,17 @@ def _disconnect_client(socket, app):
 
 def client_thread(cs, app_state):
     """
-    This function keep listening for a message from `cs` socket
-    TODO: Handle disconnected clients.
+    This function keeps listening for a message from `cs` socket
     """
     while True:
         try:
             # keep listening for a message from `cs` socket
             buffer = cs.recv(MAX_BUFFER_SIZE)
+        except Exception as e:
+            # TODO: What exceptions could we get here?
+            print(f"[!] Error: {e}")
+            _disconnect_client(cs, app_state)
+        else:
             if not buffer:
                 # This should only happen if client disconnects
                 logging.debug("Received 0 bytes from socket.")
@@ -216,11 +219,7 @@ def client_thread(cs, app_state):
                 res = handle_message(buffer, app_state, cs)
                 # Send the response in byte format
                 cs.send(res.encode_())
-        except Exception as e:
-            # TODO: What exceptions could we get here?
-            print(f"[!] Error: {e}")
-            _disconnect_client(cs, app_state)
-            return
+
 
 
 while True:

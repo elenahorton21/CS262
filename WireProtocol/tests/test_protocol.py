@@ -1,6 +1,25 @@
-# import pytest
+import pytest
+from testfixtures import compare
 
-# from src.protocol import *
+from src.protocol import *
+
+
+def test_decode_server_buffer():
+    # Create a buffer with multiple messages
+    msg1 = BroadcastMessage(sender="John", text="Hello")
+    msg2 = BroadcastMessage(sender="Jane", text="What's up?")
+    msg3 = BroadcastMessage(sender="Joe", text="How's it going?")
+    # Concatenate with an empty byte string
+    buffer = b"".join([msg1.encode_(), msg2.encode_(), msg3.encode_()])
+
+    msgs = decode_server_buffer(buffer)
+
+    # `compare` lets us easily check that the parameters are equal
+    # even though the instances are different
+    compare(msgs[0], msg1)
+    compare(msgs[1], msg2)
+    compare(msgs[2], msg3)
+
 
 
 # def test_from_str_register():
