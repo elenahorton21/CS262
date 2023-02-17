@@ -146,8 +146,10 @@ def _handle_delete_message(msg, app):
     """
     try:
         app.delete_user(msg.username)
+    # InvalidUserError is raised if username is not registered
     except InvalidUserError as e:
         res = DeleteResponse(success=False, error=str(e))
+    # ValueError is raised if the user is active
     except ValueError as e2:
         res = DeleteResponse(success=False, error=str(e2))
     else:
@@ -164,31 +166,32 @@ def handle_message(msg, app, socket):
     """
     logging.debug(f"Handling message from {socket.getsockname()}")
 
-    # Try to decode message. If this fails, return an error response.
+    # Try to decode message
     try:
         msg = decode_client_message(msg)
+    # If decoding fails, return an error response to client    
     except ValueError as e:
-        # TODO: Unsure if we should be sending a response, or just
-        # ignoring messages that can't be decoded.
         res = Response(success=False, error=str(e))
-        return res
+    # Otherwise, pass the message to appropriate service and return response
     else:
         # TODO: For now, `_handle_register_message` needs
         # to be passed the socket to register the connection. 
         if isinstance(msg, RegisterMessage):
-            return _handle_register_message(msg, app, socket)
+            res = _handle_register_message(msg, app, socket)
         elif isinstance(msg, ChatMessage):
-            return _handle_chat_message(msg, app)
+            res = _handle_chat_message(msg, app)
         elif isinstance(msg, ListMessage):
-            return _handle_list_message(msg, app)
+            res = _handle_list_message(msg, app)
         elif isinstance(msg, DeleteMessage):
-            return _handle_delete_message(msg, app)
+            res = _handle_delete_message(msg, app)
         else:
             raise NotImplementedError
+    finally:
+        return res
 
 
 def _disconnect_client(socket, app):
-    """Remove the socket from active connections in app state."""
+    """Remove the socket from active connections."""
     client_sockets.remove(socket)
     app.remove_connection(socket)
     logging.info(f"Removed {socket.getsockname()}")

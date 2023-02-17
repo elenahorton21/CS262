@@ -115,15 +115,15 @@ class AppState:
         elif self.is_valid_user(username):
             self._connections[username] = socket
             return True
-        # Otherwise, try to register a new username. This may
-        # raise an exception.
+        # Otherwise, try to register a new username and add the socket
+        # to active connections. This may raise an exception.
         else:
             self.register_user(username)
             self._connections[username] = socket
             return False
 
     def remove_connection(self, socket):
-        """Remove the connection from self.connections."""
+        """Remove the socket from active connections."""
         username = self._get_connection_username(socket)
         self._connections.pop(username)
 
