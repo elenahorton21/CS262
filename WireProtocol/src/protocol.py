@@ -2,6 +2,7 @@
 Defines message schema.
 NOTE: We can modify these classes to encode header-body messages to handle potential buffer issues.
 TODO: Add check that encoded message is smaller than `MAX_BUFFER_SIZE`.
+TODO: Add end of message token, otherwise buffer can read multiple messages at once.
 TODO: Probably want to have the conversion to bytes handled better.
 TODO: Refactor shared components.
 TODO: We should use smaller `enc_header` values, e.g. integers.
@@ -181,6 +182,7 @@ def decode_server_message(msg):
     """Factory method for converting read buffer data on client side to appropriate Message subclass."""
     msg = msg.decode() # Need to convert back to string
     content = msg.split(Message.separator_token)
+    print(content)
     if content[0] == RegisterResponse.enc_header:
         return RegisterResponse(success=bool(int(content[1])), error=content[2])
     elif content[0] == ChatResponse.enc_header:

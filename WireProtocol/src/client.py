@@ -63,7 +63,7 @@ def _display_message(msg):
     TODO: I think the format should look different
     """
     if isinstance(msg, BroadcastMessage):
-        # Different formating
+        # Different formating for direct messages
         if msg.direct:
             print(f"<<{msg.sender}: {msg.text}")
         else:
@@ -81,6 +81,8 @@ def _display_message(msg):
         # If it's an error response, print the error
         if not msg.success:
             print(f"Error: {msg.error}")
+        else:
+            print("YO")
     else:
         raise NotImplementedError
 
@@ -91,6 +93,8 @@ def _read(data):
     TODO: Better error handling.
     TODO: Change this to calling a display function that can do custom formatting on Message class
     """
+    print(data.decode())
+    print()
     try:
         msg = decode_server_message(data)
     except ValueError as e:

@@ -61,8 +61,11 @@ class AppState:
         
         return self._connections.get(username, None)
   
-    def list_users(self):
-        """Return a list of all registered usernames."""
+    def list_users(self, wildcard):
+        """
+        Return a list of all registered usernames.
+        TODO: Handle wildcards.
+        """
         return list(self._users)
   
     def register_user(self, username):
