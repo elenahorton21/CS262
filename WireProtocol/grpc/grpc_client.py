@@ -44,7 +44,7 @@ def handle_input(input, username, stub):
             response = stub.send_message(chat_pb2.MessageRequest(from_user=username, to_user=usernameToSend, message=msgText))
             return True
 
-        # user logging in as a different user
+        # user logging out
         elif input.startswith("/logout"):
             input = input.strip()
             response = logout(stub, username)
@@ -167,7 +167,7 @@ def run(IPaddress, port):
         # as long as the user is logged in, read their input
         while t.logged_in == True and logged_in == True:
             newInput = sys.stdin.readline()
-            logged_in = handle_input(newInput, username, stub)
+            logged_in = handle_input(newInput, username, stub) # only returns false if the user is no longer logged in
         
         # otherwise, exit the program
         channel.close()
