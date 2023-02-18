@@ -265,7 +265,7 @@ def _deserialize_server_message(msg):
     content = msg.split(Message.separator_token)
 
     if content[0] == RegisterResponse.enc_header:
-        return RegisterResponse(success=bool(int(content[1])), error=content[2])
+        return RegisterResponse(success=bool(int(content[1])), error=content[2], is_new_user=content[3])
     elif content[0] == ChatResponse.enc_header:
         return ChatResponse(success=bool(int(content[1])), error=content[2])
     elif content[0] == DeleteResponse.enc_header:

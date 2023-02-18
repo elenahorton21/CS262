@@ -153,7 +153,7 @@ def run(IP_address, port):
                 else:
                     input = sys.stdin.readline()
                     msg = _message_from_input(input, username)
-                    socket.send(msg.encode_())
+                    server.send(msg.encode_())
 
 
 if __name__ == "__main__":

@@ -183,7 +183,7 @@ def handle_message(msg, app, socket):
         # If the response is a successful register response,
         # add the current socket as the user's socket
         if res.success:
-            app.add_connection(msg.user, cs)
+            app.add_connection(msg.username, socket)
     elif isinstance(msg, ChatMessage):
         res = _chat_service(msg, app)
     elif isinstance(msg, ListMessage):
@@ -236,9 +236,8 @@ def client_thread(cs, app):
                 return
             # Otherwise, decode the buffer and handle each message
             else:
-                msgs = decode_server_buffer(buffer)
+                msgs = decode_client_buffer(buffer)
                 for msg in msgs:
-                    logging.debug(f"Handling message from {socket.getsockname()}")
                     # Handle message and return response to client
                     res = handle_message(msg, app, cs)
                     # Send the response in byte format
