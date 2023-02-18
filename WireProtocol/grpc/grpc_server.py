@@ -21,8 +21,13 @@ MAX_BUFFER_SIZE = config["MAX_BUFFER_SIZE"]
 MAX_NUM_CONNECTIONS = config["MAX_NUM_CONNECTIONS"]
 
 
+# define all of the grpc functions on the server side
 class Chat(chat_pb2_grpc.ChatServicer):
 
+    # create a user--> 3 cases: 
+    # (1) user is new, create a new account 
+    # (2) user is already logged in, refuse the login. 
+    # (3) user is already registered but not logged in. They are re-logged in and able to join.
     def create_user(self, request, _context):
         username = request.username
         print("Joining user: " + username)
@@ -35,7 +40,8 @@ class Chat(chat_pb2_grpc.ChatServicer):
             response = str("Welcome back " + username + " !")
         return chat_pb2.ChatReply(message=response)
 
-    # send message (passes to App class, which will handle either sending to a known user or broadcasting to all users)
+    # send message (passes to App class, which will handle either 
+    # sending to a known user or broadcasting to all users)
     def send_message(self, request, _context):
         from_user = request.from_user
         to_user = request.to_user
@@ -56,6 +62,7 @@ class Chat(chat_pb2_grpc.ChatServicer):
             return chat_pb2.ChatReply(message= "Could not list users.")
 
     # get messages for a user
+    # if a user has been deleted by another account, they are alerted
     def get_message(self, request, _context):
         username = request.user
         msg = chatServer.get_messages(username)
@@ -97,5 +104,3 @@ def serve():
 
 if __name__ == '__main__':
     serve()
-
-
