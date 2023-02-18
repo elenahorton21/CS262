@@ -7,7 +7,7 @@ from src.protocol import *
 def test_decode_server_buffer():
     # Create a buffer with multiple messages
     msg1 = BroadcastMessage(sender="John", text="Hello")
-    msg2 = BroadcastMessage(sender="Jane", text="What's up?")
+    msg2 = ChatResponse(success=1)
     msg3 = BroadcastMessage(sender="Joe", text="How's it going?")
     # Concatenate with an empty byte string
     buffer = b"".join([msg1.encode_(), msg2.encode_(), msg3.encode_()])

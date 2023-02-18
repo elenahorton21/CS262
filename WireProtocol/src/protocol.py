@@ -7,10 +7,16 @@ NOTE: We can modify these classes to encode header-body messages to handle poten
 TODO: pytest is throwing errors when I import config.
 """
 # from config import config
+import logging
 
 
 # MAX_BUFFER_SIZE = config["MAX_BUFFER_SIZE"]
 MAX_BUFFER_SIZE = 1024
+
+
+# Logging
+logging.basicConfig(level=logging.DEBUG,
+                    format='(%(threadName)-9s) %(message)s',)
 
 
 class Message:
@@ -147,20 +153,34 @@ class Response(Message):
 
 
 class RegisterResponse(Response):
-    """Response format for registering username."""
+    """
+    Response format for registering username. Extends Response class with
+    a boolean that is False if the user is a returning user, i.e. the username
+    has previously been registered.
+    """
     enc_header = "RESR"
 
+    def __init__(self, success, is_new_user, error=None):
+        super().__init__(success, error)
+        self.is_new_user = is_new_user
 
+    def _data_items(self):
+        return super()._data_items() + [str(int(self.is_new_user))]
+    
+    
 class ChatResponse(Response):
     """Response format for chat messages."""
     enc_header = "RESC"
 
 
 class ListResponse(Response):
-    """Response format for listing users."""
+    """
+    Response format for ListMessage. Extends Response class to 
+    include sending the list of users.
+    """
     enc_header = "RESL"
 
-    def __init__(self, success, error=None, users=[]):
+    def __init__(self, success, users, error=None):
         """
         Initialize ListResponse instance.
 
@@ -205,50 +225,17 @@ class BroadcastMessage(Message):
 ####################
 ### Decoding
 ####################
-"""
-TODO: Unsure if we need to handle decoding multiple messages from the client,
-since multiple messages are never sent in one function call.
-"""
 
-def decode_buffer(buffer):
+def _deserialize_client_message(msg):
     """
-    Decode an encoded string into a list of messages. For each message, we call
-    `decode_server_message` to convert it into a Message instance.
-
-    TODO: This does not handle the case where the encoded string contains
-    an incomplete message at the end, which could happen if the buffer holds more
-    data than MAX_BUFFER_SIZE.
-    """
-    decoded_str = buffer.decode()
-    msgs = decoded_str.split(Message.EOM_token)
-
-    # If we have received a sequence of valid messages, the last token
-    # should be EOM_token, so the last item returned by `split()` should
-    # be "". Otherwise, raise an exception.
-    if msgs[-1] != "":
-        raise ValueError("Buffer contains incomplete message.")
+    Factory method for deserializing a message string to appropriate Message subclass.
     
-    # Remove the empty string from list
-    msgs = msgs[:-1]
-
-    # Decode each message and return list
-    return msgs
-
-
-def decode_server_buffer(buffer):
-    msgs = decode_buffer(buffer)
-
-    return [_decode_server_message(msg) for msg in msgs]
-
-
-def decode_client_buffer(buffer):
-    msgs = decode_buffer(buffer)
-
-    return [_decode_client_message(msg) for msg in msgs]
-
-
-def _decode_client_message(msg):
-    """Factory method for converting an encoded message to appropriate Message subclass."""
+    Args:
+        msg (str): The decoded string.
+    
+    Returns:
+        Message: The deserialized Message instance.
+    """
     content = msg.split(Message.separator_token)
 
     if content[0] == RegisterMessage.enc_header:
@@ -265,15 +252,15 @@ def _decode_client_message(msg):
       raise ValueError("Unknown message type header received from client.")
 
 
-def _decode_server_message(msg):
+def _deserialize_server_message(msg):
     """
-    Factory method for converting decoded string on client side to appropriate Message subclass.
+    Factory method for deserializing a message string to appropriate Message subclass.
     
     Args:
-        msg (str): The decoded message string.
-
+        msg (str): The decoded string.
+    
     Returns:
-        Message: Returns the appropriate subclass based on the string header.
+        Message: The deserialized Message instance.
     """
     content = msg.split(Message.separator_token)
 
@@ -290,3 +277,56 @@ def _decode_server_message(msg):
         return BroadcastMessage(sender=content[1], direct=bool(int(content[2])), text=content[3])
     else:
         raise ValueError("Unknown message type header received from server.")
+    
+
+def _decode_buffer(deserialize_fn):
+    """
+    Closure for decoding byte buffers with a given deserialization function. The returned
+    function splits the buffer into individual messages, and then applies the deserialization
+    function to each.
+
+    NOTE: Messages that cannot be deserialized are ignored.
+
+    Args: 
+        deserialization_fn (str -> Message): A function that converts a decoded string
+            into a Message instance.
+    
+    Returns:
+        (buffer -> List[Message]): A function that decodes a buffer into a list of
+            messages.
+    """
+    def inner(buffer):
+        decoded_str = buffer.decode()
+        msgs = decoded_str.split(Message.EOM_token)
+
+        # If we have received a sequence of valid messages, the last token
+        # should be EOM_token, so the last item returned by `split()` should
+        # be "". Otherwise, ignore the incomplete message.
+        if msgs[-1] != "":
+            logging.warning("The buffer did not end with a complete message. Ignoring last message.")
+        msgs = msgs[:-1]
+
+        # Loop through messages and try to decode, ignoring if decoding fails
+        out = []
+        for msg in msgs:
+            try:
+                decoded = deserialize_fn(msg)
+            except ValueError as e:
+                logging.error(f"Could not decode message {msg}: {e}")
+            else:
+                out.append(decoded)
+        
+        return out
+
+    return inner
+
+
+# Function for decoding a buffer on the client side
+decode_client_buffer = _decode_buffer(_deserialize_client_message)
+
+
+# Function for decoding a buffer on the server side
+decode_server_buffer = _decode_buffer(_deserialize_server_message)
+
+
+

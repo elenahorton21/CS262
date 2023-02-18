@@ -36,12 +36,12 @@ s.listen(MAX_NUM_CONNECTIONS)
 print(f"[*] Listening as {SERVER_HOST}:{SERVER_PORT}")
 
 # Initialize app state
-app = AppState() 
+app_state = AppState() 
 
 
-def broadcast(msg, recvs):
+def _broadcast(msg, recvs):
     """
-    Send a message to a list of clients.
+    Broadcast a message to a list of clients.
     TODO: Handle exceptions with `conn.send`.
 
     Args:
@@ -58,9 +58,17 @@ def broadcast(msg, recvs):
         conn.send(msg.encode_())
 
 
-def _handle_register_message(msg, app, socket):
+def _register_service(msg, app, socket):
     """
-    Handle a RegisterMessage from client.
+    Service for handling register messages from client.
+
+    Args:
+        msg (ChatMessage): The message received from client.
+        app (AppState): The current app state.
+        socket (Socket): The socket to add connection with.
+    
+    Returns:
+        ChatResponse: The response to client.        
     """
     try:
         is_existing = app.add_connection(msg.username, socket)
@@ -73,9 +81,9 @@ def _handle_register_message(msg, app, socket):
         return res
 
 
-def _handle_chat_message(msg, app):
+def _chat_service(msg, app):
     """
-    Handle a ChatMessage from client. Returns an error response if the recipient
+    Service for handling a ChatMessage from client. Returns an error response if the recipient
     does not exist. Otherwise, broadcasts to active recipients, queues the 
     the message for inactive recipients, and returns a success response.
 
@@ -111,15 +119,15 @@ def _handle_chat_message(msg, app):
     
     # Broadcast the message to recipients
     # TODO: Are there cases where this fails and we should return error response?
-    broadcast(broadcast_msg, recv_conns)
+    _broadcast(broadcast_msg, recv_conns)
 
     # Return success response
     return ChatResponse(success=True)
 
 
-def _handle_list_message(msg, app):
+def _list_service(msg, app):
     """
-    Handle ListMessage.
+    Service fo handling ListMessage.
     TODO: Change to wildcard functionality. Right now this just lists all users.
     """
     users = app.list_users(wildcard=msg.wildcard)
@@ -127,9 +135,9 @@ def _handle_list_message(msg, app):
     return res
 
 
-def _handle_delete_message(msg, app):
+def _delete_service(msg, app):
     """
-    Handle DeleteMessage from client. Will return an error response if
+    Service for handling DeleteMessage from client. Will return an error response if
     the username does not exist or the user is active.
 
     Args:
@@ -156,69 +164,74 @@ def _handle_delete_message(msg, app):
 
 def handle_message(msg, app, socket):
     """
+    Route a Message instance to the appropriate service
     Returns:
         Response
     """
     logging.debug(f"Handling message from {socket.getsockname()}")
 
-    # Try to decode message
-    try:
-        # TODO: Right now we are assuming that only one message
-        # is sent.
-        msgs = decode_client_buffer(msg)
-        assert (len(msgs) == 1)
-        msg = msgs[0]
-    # If decoding fails, return an error response to client    
-    except ValueError as e:
-        res = Response(success=False, error=str(e))
-    # Otherwise, pass the message to appropriate service and return response
+    # Note: For now, `_handle_register_message` needs
+    # to be passed the socket to register the connection. 
+    if isinstance(msg, RegisterMessage):
+        res = _register_service(msg, app, socket)
+    elif isinstance(msg, ChatMessage):
+        res = _chat_service(msg, app)
+    elif isinstance(msg, ListMessage):
+        res = _list_service(msg, app)
+    elif isinstance(msg, DeleteMessage):
+        res = _delete_service(msg, app)
     else:
-        # TODO: For now, `_handle_register_message` needs
-        # to be passed the socket to register the connection. 
-        if isinstance(msg, RegisterMessage):
-            res = _handle_register_message(msg, app, socket)
-        elif isinstance(msg, ChatMessage):
-            res = _handle_chat_message(msg, app)
-        elif isinstance(msg, ListMessage):
-            res = _handle_list_message(msg, app)
-        elif isinstance(msg, DeleteMessage):
-            res = _handle_delete_message(msg, app)
-        else:
-            raise NotImplementedError
-    finally:
-        return res
+        raise NotImplementedError
+    
+    return res
 
 
 def _disconnect_client(socket, app):
-    """Remove the socket from active connections."""
-    client_sockets.remove(socket)
+    """Handle a disconnected client."""
+    # Remove the socket from active connections in app state
     app.remove_connection(socket)
+    # Remove the socket from client sockets
+    client_sockets.remove(socket)
     logging.info(f"Removed {socket.getsockname()}")
 
 
-def client_thread(cs, app_state):
+def client_thread(cs, app):
     """
-    This function keeps listening for a message from `cs` socket
+    This function keeps listening for a message from `cs` socket.
+    If data is received, decode the buffer into one or more Message
+    instances, pass them to them appropriate service, and send response
+    back to client. If the client has disconnnected, remove them from 
+    active connections and app state.
+
+    Args:
+        cs (Socket): The socket to listen to.
+        app (AppState): The app state.
+
+    Returns:
+        None
     """
     while True:
         try:
-            # keep listening for a message from `cs` socket
+            # Listen for a message from `cs` socket
             buffer = cs.recv(MAX_BUFFER_SIZE)
         except Exception as e:
             # TODO: What exceptions could we get here?
-            print(f"[!] Error: {e}")
-            _disconnect_client(cs, app_state)
+            logging.error(f"[!] Error: {e}")
+            _disconnect_client(cs, app)
         else:
+            # If buffer is 0, the client has disconnected
             if not buffer:
-                # This should only happen if client disconnects
                 logging.debug("Received 0 bytes from socket.")
-                _disconnect_client(cs, app_state)
+                _disconnect_client(cs, app)
                 return
+            # Otherwise, decode the buffer and handle each message
             else:
-                # Handle message and return response to client
-                res = handle_message(buffer, app_state, cs)
-                # Send the response in byte format
-                cs.send(res.encode_())
+                msgs = decode_server_buffer(buffer)
+                for msg in msgs:
+                    # Handle message and return response to client
+                    res = handle_message(msg, app, cs)
+                    # Send the response in byte format
+                    cs.send(res.encode_())
 
 
 
@@ -229,7 +242,7 @@ while True:
     # Add the new client to connected sockets
     client_sockets.add(client_socket)
     # Create a thread for each client
-    t = Thread(target=client_thread, args=(client_socket, app))
+    t = Thread(target=client_thread, args=(client_socket, app_state))
     # Make the thread a daemon so it ends when the main thread does
     t.daemon = True
     # Start the thread
