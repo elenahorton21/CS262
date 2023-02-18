@@ -68,13 +68,28 @@ class AppState:
         return list(self._users)
   
     def register_user(self, username):
-        """Register a new username."""
-        if username in self._users:
-            raise ValueError("Username is already registered.")
+        """
+        Register a username.
+
+        Returns:
+            bool: True if the user is new, False if registering with
+                an existing username.
+        
+        Raises:
+            ValueError: If the username contains non-alphanumeric characters.
+            InvalidUserError: If the username is being used by an active user.
+        """
+        if username in self._connections.keys():
+            raise InvalidUserError("Username is already in use.")
         elif not username.isalnum():
             raise ValueError("Username must contain only alphanumeric characters only.")
+        
+        # Check if the user is a previously registered username
+        if username in self._users:
+            return False
         else:
             self._users.add(username)
+            return True
 
     def delete_user(self, username):
         """
@@ -100,26 +115,15 @@ class AppState:
         self._msg_queue.pop(username, None) # Pass a default so that KeyError is not raised
 
     def add_connection(self, username, socket):
-        """
-        Returns False if the connection is a previous user logging in, so 
-        the server can send the message queue.
-
-        TODO: We could add a check that the socket isn't logged in with
-        multiple usernames.
-        """
-        # Username is currently being used
+        """Create an active connection for `username` to socket."""
+        # Check that there is not already an active connection with username
         if username in self._connections.keys():
-            raise ValueError("Username is currently being used.")
-        # If username exists and is inactive, add an active connection
-        elif self.is_valid_user(username):
-            self._connections[username] = socket
-            return True
-        # Otherwise, try to register a new username and add the socket
-        # to active connections. This may raise an exception.
-        else:
-            self.register_user(username)
-            self._connections[username] = socket
-            return False
+            raise InvalidUserError("Username is already connected to a socket.")
+        # Check that the socket is not already registered to a user
+        if socket in self._connections.values():
+            raise ValueError("Socket is already associated with another user.")
+
+        self._connections[username] = socket
 
     def remove_connection(self, socket):
         """Remove the socket from active connections."""
