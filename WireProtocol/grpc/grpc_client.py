@@ -10,8 +10,12 @@ from time import sleep
 
 MAX_BUFFER_SIZE = 1024
 
+
+# main function for handling the user input and translating it into messages or commands
 def handle_input(input, username, stub):
     try: 
+
+        # list users
         if input.startswith("/list"):
             if len(input.split(" ")) == 1:
                 wildcard = None
@@ -54,26 +58,30 @@ def handle_input(input, username, stub):
         else: 
             response = stub.send_message(chat_pb2.MessageRequest(from_user=username, to_user=None, message=input))
             return True
-        
+
+    # improper user input, remind the user of the usage    
     except Exception:
         print("Improper usage.")
         print("(1) Send a message to all --> type message and press enter")
         print("(2) Send a message to specified recipient --> '>> [recipient]: [message]'")
         print("(3) List all recipients w/ optional wildcard --> '/list [wildcard]'")
         print("(4) Delete a specified recipient account --> '/delete [recipient]'")
-        print("(5) Login as different user --> '/login [username]'")
+        print("(5) Logout --> '/logout'")
 
 
+# helper functions to login the user
 def login(stub, username):
     response = stub.create_user(chat_pb2.UserRequest(username=username))
     return response
 
+# check if the user is already logged in, otherwise login is successful
 def loginUser(response):
     if response.message == "This username is already logged in. Please choose another one.":
         return False
     else:
         return True
 
+# logout the user
 def logout(stub, username):
     response = stub.logout_user(chat_pb2.UserRequest(username= username))
     return response
@@ -99,10 +107,11 @@ class ServerThread(Thread):
         self.logged_in = False
         self.start()
     
+    # kill the thread
     def kill(self):
         sys.exit()
 
-
+    # main loop for the server thread, it constantly polls for messages from the server to the client
     def run(self):
         while True:
             try: 
@@ -124,17 +133,24 @@ class ServerThread(Thread):
                 print("Bye!")
                 self.kill()
 
-def run():
+# main loop for the client
+def run(IPaddress, port):
     logged_in = False
-    with grpc.insecure_channel('localhost:50051') as channel:
+    connectionString = str(IPaddress + ":" + str(port))
+    print("Connecting on: " + connectionString)
+
+    # initialize grpc channel
+    with grpc.insecure_channel(connectionString) as channel:
         stub = chat_pb2_grpc.ChatStub(channel)
 
+        # run the login loop until the user successfully logs in
         while not logged_in:
             username = input("Enter your username:")
             response = login(stub, username)
             print(response)
             logged_in = loginUser(response)
 
+        # once logged in, start the server thread to get messages from the server
         t = ServerThread(stub, username)
         t.logged_in = True
             
@@ -148,11 +164,12 @@ def run():
         print("(4) Delete a specified recipient account --> '/delete [recipient]'")
         print("(5) Logout --> '/logout'")
 
-
+        # as long as the user is logged in, read their input
         while t.logged_in == True and logged_in == True:
             newInput = sys.stdin.readline()
             logged_in = handle_input(newInput, username, stub)
         
+        # otherwise, exit the program
         channel.close()
         sys.exit()
             
@@ -160,11 +177,11 @@ def run():
 if __name__ == "__main__":
     # parse and check arguments
     # TODO: Add defaults and better input handling
-    # if len(sys.argv) != 4:
-    #     print ("Correct usage: script, IP address, port number")
-    #     exit()
-    # IP_address = str(sys.argv[1])
-    # port = int(sys.argv[2])
+    if len(sys.argv) != 3:
+        print ("Correct usage: script, IP address, port number")
+        exit()
+    IP_address = str(sys.argv[1])
+    port = int(sys.argv[2])
     # IP_address = "127.0.0.1"
     # port = 50015 # server's port
-    run()
+    run(IP_address, port)
