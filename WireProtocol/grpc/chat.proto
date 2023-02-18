@@ -9,6 +9,7 @@ service Chat{
   rpc send_message (MessageRequest) returns (ChatReply) {}
   rpc get_message (GetRequest) returns (ChatReply) {}
   rpc chat_stream (MessageRequest) returns (stream ChatReply);
+  rpc logout_user(UserRequest) returns (ChatReply){}
 
 }
 

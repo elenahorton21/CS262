@@ -27,10 +27,15 @@ class Chat(chat_pb2_grpc.ChatServicer):
         username = request.username
         print("Joining user: " + username)
         result = chatServer.create_user(username)
-        response = str("Welcome to the chat " + username + "!")if result else str("Welcome back " + username + "!")
+        if result == 0:
+            response = "SUCCESS"
+        elif result == 1:
+            response = "This username is already logged in. Please choose another one."
+        else:
+            response = str("Welcome back " + username + " !")
         return chat_pb2.ChatReply(message=response)
 
-    # send message from one logged in user to another
+    # send message (passes to App class, which will handle either sending to a known user or broadcasting to all users)
     def send_message(self, request, _context):
         from_user = request.from_user
         to_user = request.to_user
@@ -69,6 +74,15 @@ class Chat(chat_pb2_grpc.ChatServicer):
             response = "Success."
         return chat_pb2.ChatReply(message = response)
 
+    # logout user
+    def logout_user(self, request, _context):
+        user = request.username
+        response = chatServer.logout_user(user)
+        if response == True:
+            print("Logging out user " + user)
+            response = "SUCCESS"
+        else: response = "Error logging out."
+        return chat_pb2.ChatReply(message = response)
 
 
 def serve():
@@ -80,70 +94,6 @@ def serve():
     print("GRPC Server started, listening on " + port)
     server.wait_for_termination()
 
-
-
-####-------------------------------------------------------------------####
-
-
-# def _handle_chat_message(user, to_user, msg, app):
-#     """
-#     Handle a ChatMessage from client. Returns an error response if the recipient
-#     does not exist. Otherwise, broadcasts to active recipients, queues the 
-#     the message for inactive recipients, and returns a success response.
-
-#     Args:
-#         msg (ChatMessage): The message received from client.
-#         app (AppState): The current app state.
-    
-#     Returns:
-#         ChatResponse: The response to client.
-#     """
-#     # If the recipient does not exist, return an error response
-#     if to_user and not app.is_valid_user(to_user):
-#         res = str("User " + to_user + " does not exist.")
-#         return res
-
-#     # Convert ChatMessage to BroadcastMessage
-#     broadcast_msg = msg.to_broadcast() 
-#     # If recipient was not specified, all active users are recipients
-#     if not to_user:
-#         recv_conns = app.get_all_connections()
-#     # Otherwise, broadcast the message to sender, and recipient if active.
-#     else:
-#         # TODO: Roundabout way of getting sender socket    
-#         recv_conns = [app.get_user_connection(user)]
-#         # Get recipient socket
-#         recipient_conn = app.get_user_connection(to_user)
-#         # If recipient is active, add their socket to receiving connections
-#         if recipient_conn:
-#             recv_conns.append(recipient_conn)
-#         # If `recv_conn` is None, the user is inactive. Queue the message for later.
-#         else:
-#             app.queue_message(to_user, broadcast_msg)
-    
-#     # Broadcast the message to recipients
-#     # TODO: Are there cases where this fails and we should return error response?
-#     broadcast(broadcast_msg, recv_conns)
-
-#     # Return success response
-#     return True
-
-# def broadcast(msg, recvs):
-#     """
-#     Send a message to a list of clients.
-#     TODO: Handle exceptions with `conn.send`.
-
-#     Args:
-#         msg (BroadcastMessage): The message to send to clients.
-#         recvs (List[Socket]): The sockets to send the message to.
-
-#     Returns:
-#         None
-#     """
-#     # Check that the message is an instance of BroadcastMessage
-
-#     for conn in recvs:
-#         conn.send(msg.encode_())
 
 if __name__ == '__main__':
     serve()

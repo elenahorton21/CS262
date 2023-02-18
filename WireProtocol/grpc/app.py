@@ -9,11 +9,11 @@ class App:
     def create_user(self, username):
         if username not in self.users:
             self.users[username] = User(username)
-            return "Success"
+            return 0
         elif username in self.users and self.users[username].logged_in == True:
-            return "User already logged in"
+            return 1
         else:
-            return "Returning user"
+            return 2
     
     def send_message(self, from_user, to_user, message):
         msg = Message(from_user, message)
@@ -74,10 +74,13 @@ class App:
             self.send_message(user_deleting, user_to_delete, "You have been deleted by me.")
             self.users.pop(user_to_delete)
             return True
-
-
-
-        
+    
+    def logout_user(self, username):
+        if username not in self.users:
+            return False
+        else:
+            self.users[username].log_out()
+            return True
 
 
  
@@ -85,7 +88,7 @@ class App:
 class User:
     def __init__(self, username):
         self.username = username
-        self.loggedin = True
+        self.logged_in = True
         self.messages = []
 
     # appends a message to the list of messages
@@ -93,10 +96,10 @@ class User:
         self.messages.append(message)
     
     def log_out(self):
-        self.loggein = False
+        self.logged_in = False
     
     def log_in(self):
-        self.loggein = True
+        self.logged_in = True
         
 
 class Message:
