@@ -55,7 +55,7 @@ class Chat(chat_pb2_grpc.ChatServicer):
         else:
             return chat_pb2.ChatReply(message= "Could not list users.")
 
-    # read a message that has been sent to the logged in user
+    # get messages for a user
     def get_message(self, request, _context):
         username = request.user
         msg = chatServer.get_messages(username)
