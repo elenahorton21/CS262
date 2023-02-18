@@ -164,12 +164,15 @@ def _delete_service(msg, app):
 
 def handle_message(msg, app, socket):
     """
-    Route a Message instance to the appropriate service
+    Route a Message instance to the appropriate service.
+
+    Args:
+        msg (str): The string to be deserialized.
+        app (AppState): The app state.
+        socket (Socket): The client socket that sent message.
     Returns:
         Response
     """
-    logging.debug(f"Handling message from {socket.getsockname()}")
-
     # Note: For now, `_handle_register_message` needs
     # to be passed the socket to register the connection. 
     if isinstance(msg, RegisterMessage):
@@ -228,11 +231,11 @@ def client_thread(cs, app):
             else:
                 msgs = decode_server_buffer(buffer)
                 for msg in msgs:
+                    logging.debug(f"Handling message from {socket.getsockname()}")
                     # Handle message and return response to client
                     res = handle_message(msg, app, cs)
                     # Send the response in byte format
                     cs.send(res.encode_())
-
 
 
 while True:
