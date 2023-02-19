@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.DEBUG,
 
 # Configuration
 MAX_BUFFER_SIZE = config["MAX_BUFFER_SIZE"]
-SERVER_HOST = config["SERVER_HOST"]
+SERVER_ADDRESS = config["SERVER_ADDRESS"]
 SERVER_PORT = config["SERVER_PORT"]
 
 
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     #     exit()
     # IP_address = str(sys.argv[1])
     # port = int(sys.argv[2])
-    IP_address = SERVER_HOST
+    IP_address = SERVER_ADDRESS
     port = SERVER_PORT # server's port
 
     run(IP_address, port)
