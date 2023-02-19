@@ -13,6 +13,7 @@ from config import config
 MAX_BUFFER_SIZE = config["MAX_BUFFER_SIZE"]
 SERVER_ADDRESS = config["SERVER_ADDRESS"]
 SERVER_PORT = config["SERVER_PORT"]
+MAX_USERNAME = 20
 
 
 # main function for handling the user input and translating it into messages or commands
@@ -75,6 +76,9 @@ def handle_input(input, username, stub):
 
 # helper functions to login the user
 def login(stub, username):
+    if len(username) > MAX_USERNAME:
+        print (f"This username is too long. Please enter a username < {MAX_USERNAME} characters")
+        return False
     response = stub.create_user(chat_pb2.UserRequest(username=username))
     return response
 
@@ -152,7 +156,8 @@ def run(IPaddress, port):
             username = input("Enter your username:")
             response = login(stub, username)
             print(response)
-            logged_in = loginUser(response)
+            if response:
+                logged_in = loginUser(response)
 
         # once logged in, start the server thread to get messages from the server
         t = ServerThread(stub, username)
@@ -171,7 +176,12 @@ def run(IPaddress, port):
         # as long as the user is logged in, read their input
         while t.logged_in == True and logged_in == True:
             newInput = sys.stdin.readline()
-            logged_in = handle_input(newInput, username, stub) # only returns false if the user is no longer logged in
+
+            # ensure that the input is less than the max length
+            if len(newInput) > MAX_BUFFER_SIZE:
+                print("ERROR: Message too long.")
+            else: 
+                logged_in = handle_input(newInput, username, stub) # only returns false if the user is no longer logged in
         
         # otherwise, exit the program
         channel.close()

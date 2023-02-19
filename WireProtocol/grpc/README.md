@@ -4,7 +4,9 @@ This folder contains the grpc implementation of our chat app. There are several 
 # Usage
 To run this application, first start the server by running `python3 grpc_server.py`.
 
-Then, in another terminal window, start the client by running `python3 grpc_client.py [host] [port]`
+Then, in another terminal window, start the client by running `python3 grpc_client.py`
+
+To configure the host and port you are running on, you must edit the `config.py` file in this `grpc` folder. 
 
 ## Client usage
 
@@ -37,10 +39,16 @@ There are no commands to explicitly recieve messages, they will come in as they 
 
 # Structure
 
+This code has three main components, along with supplemental files:
+1) `grpc_client.py`: This is the client module. It contains the gRPC stubs to invoke remote calls on the `grpc_server.py` module. All of the logic for running and handling user input is contained in this module.
+2) `grpc_server.py`: This is the server module. It contains all of functions that can be remotely called by the client. To handle the overall state and memory of the application, it passes calls to `app.py`.
+3) `app.py`: This is the app state class that our chat application uses to keep track of users and messages. The `grpc_server.py` instantiates an `App` object and, through calls from its clients, manipulates the object throughout its lifetime to keep track of new users, removed users, and messages associated with all users. 
+4) Supplemental files include `chat.proto`, our prototype definition file, `build_proto_file.sh`, a simple script to auto-generatre the associated grpc files `chat_pb2.py`, `chat_pb2_grpc.py`, and `chat_pb2.pyi`. `config.py` contains the pre-defined settings for maximum connections, max buffer length, hostname, port, and server IP address.  
+
 # Limitations
 
-1) mainly the issue with needing to log out
-2) 
+1) The primary limitation of this code is that users must logout to be able to log back in again later. This could be solved in the future with some way for the grpc server to be alerted if a client is no longer requesting messages (calling the `get_messages` function on the server). 
+2) Another limitation is that only messages shorter than the defined `MAX_BUFFER_LENGTH` can be sent in our application. This is consistent with the specs clarified in Ed postings. 
 
 # Differences from non-gRPC Implementation
 
@@ -62,5 +70,4 @@ Some big decisions that were made:
 
 # Future Work
 3) Unit tests
-4) DOCUMENT EVERYTHING in the code
 5) Write an engineering notebook/fill out the contents of this readme
