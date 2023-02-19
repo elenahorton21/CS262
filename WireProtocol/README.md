@@ -1,5 +1,4 @@
 # CS 262: Wire Protocols Assignment
-## Elena Horton and Jerry Yang
 
 ### Protocol Definition
 
