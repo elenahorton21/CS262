@@ -59,7 +59,7 @@ class Chat(chat_pb2_grpc.ChatServicer):
         if result:
             return chat_pb2.ChatReply(message = result)
         else:
-            return chat_pb2.ChatReply(message= "Could not list users.")
+            return chat_pb2.ChatReply(message= "No users to list.")
 
     # get messages for a user
     # if a user has been deleted by another account, they are alerted

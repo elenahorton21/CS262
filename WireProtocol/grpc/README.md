@@ -21,7 +21,7 @@ Private messages must be specified by the user with `>> username: [message]`. If
 
 #### List accounts
 
-Users must enter `/list` to list all accounts or `/list [wildcard]` to list a subset of accounts by a wildcard. 
+Users must enter `/list` to list all accounts or `/list [wildcard]` to list a subset of accounts by a wildcard. The wildcard is formatted as a regular expression (i.e. the wildcard `e` will return all names that begin with e, the wildcard `.a` will return all names that have `a` as the 2nd character, the wildcard `.*i` will return all names that have an `i` anywhere in them, etc.)
 
 #### Delete an account
 

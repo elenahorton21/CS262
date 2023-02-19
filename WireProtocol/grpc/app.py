@@ -55,14 +55,14 @@ class App:
 
     def list_users(self, wildcard):
         response = ""
-        print(wildcard)
         try:
             matchedUsers = [user for user in self.users if re.match(wildcard, user)]
+            print(matchedUsers)
             for user in matchedUsers:
-                print(user)
                 response += str(self.users[user].username + ", ")
         except Exception:
             "BAD WILDCARD SEARCH TERM"
+            response = "Improper Wildcard Term"
         return response
 
     def delete_user(self, user_to_delete, user_deleting):
