@@ -160,11 +160,14 @@ class RegisterResponse(Response):
     """
     enc_header = "RESR"
 
-    def __init__(self, success, is_new_user, error=None):
+    def __init__(self, success, error=None, is_new_user=None):
         super().__init__(success, error)
         self.is_new_user = is_new_user
 
     def _data_items(self):
+        # If `is_new_user` is None, it is an error response. Include an empty
+        # string in place of this field.
+        new_user_str = str(int(self.is_new_user)) if self.is_new_user != None else ""
         return super()._data_items() + [str(int(self.is_new_user))]
     
     
@@ -265,7 +268,7 @@ def _deserialize_server_message(msg):
     content = msg.split(Message.separator_token)
 
     if content[0] == RegisterResponse.enc_header:
-        return RegisterResponse(success=bool(int(content[1])), error=content[2])
+        return RegisterResponse(success=bool(int(content[1])), error=content[2], is_new_user=content[3])
     elif content[0] == ChatResponse.enc_header:
         return ChatResponse(success=bool(int(content[1])), error=content[2])
     elif content[0] == DeleteResponse.enc_header:

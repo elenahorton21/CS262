@@ -4,6 +4,7 @@ Python program to implement client side of chat application.
 TODO: Refactor to make cleaner.
 TODO: Better control, right now control flow is quite messy, e.g. using
 `return` to exit out of some loops. Maybe use `exit()` instead?
+TODO: Might want to use a thread for listening as in `client_ex.py`.
 """
 import socket
 import select
@@ -21,6 +22,8 @@ logging.basicConfig(level=logging.DEBUG,
 
 # Configuration
 MAX_BUFFER_SIZE = config["MAX_BUFFER_SIZE"]
+SERVER_ADDRESS = config["SERVER_ADDRESS"]
+SERVER_PORT = config["SERVER_PORT"]
 
 
 def _authenticate(server):
@@ -90,23 +93,6 @@ def _display_message(msg):
         raise NotImplementedError
 
 
-def _read(data):
-    """
-    Defines behavior for reading from server socket. Buffer data is decoded into
-    a list of Message instances, which are then displayed.
-    TODO: Better error handling.
-    TODO: Change this to calling a display function that can do custom formatting on Message class
-    """
-    try:
-        msgs = decode_server_buffer(data)
-    except ValueError as e:
-        logging.error(f"Unable to decode message: {e}")
-    else:
-        # Iterate through the received messages and display
-        for msg in msgs:
-            _display_message(msg)
-
-
 def _message_from_input(input, username):
     """
     Convert the user input into a Message object.
@@ -132,16 +118,6 @@ def _message_from_input(input, username):
         return ChatMessage(sender=username, text=input)
 
 
-def _write(socket, input, username):
-    """
-    Defines what message to send based on user input.
-    TODO: We should probably check that the write buffer is available first before sending. 
-    Check this post: https://stackoverflow.com/questions/43552960/check-socket-with-select-before-using-send
-    """
-    msg = _message_from_input(input, username)
-    socket.send(msg.encode_())
-
-
 def run(IP_address, port):
     # Initialize TCP socket
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
@@ -159,21 +135,27 @@ def run(IP_address, port):
         print(f"Welcome to the chatroom {username}!")
 
         while True:
-            # maintains a list of possible input streams
+            # TODO: Understand the use of select here.
+            # Maintain a list of possible input streams
             sockets_list = [sys.stdin, server]
             read_sockets, write_socket, error_socket = select.select(sockets_list,[],[])
         
             for socks in read_sockets:
                 if socks == server:
                     data = socks.recv(MAX_BUFFER_SIZE)
+                    if data:
+                        msgs = decode_server_buffer(data)
+                        # Iterate through the received messages and display
+                        for msg in msgs:
+                            _display_message(msg)
                     # If there is no data received, stop listening
-                    if not data:
+                    else:
                         print("Server disconnected.")
                         return
-                    _read(data)
                 else:
                     input = sys.stdin.readline()
-                    _write(server, input, username)
+                    msg = _message_from_input(input, username)
+                    server.send(msg.encode_())
 
 
 if __name__ == "__main__":
@@ -184,7 +166,7 @@ if __name__ == "__main__":
     #     exit()
     # IP_address = str(sys.argv[1])
     # port = int(sys.argv[2])
-    IP_address = "127.0.0.1"
-    port = 5002 # server's port
+    IP_address = SERVER_ADDRESS
+    port = SERVER_PORT # server's port
 
     run(IP_address, port)

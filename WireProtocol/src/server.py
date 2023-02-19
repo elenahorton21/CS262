@@ -58,25 +58,31 @@ def _broadcast(msg, recvs):
         conn.send(msg.encode_())
 
 
-def _register_service(msg, app, socket):
+def _register_service(msg, app):
     """
-    Service for handling register messages from client.
+    Service for handling register messages from client. Returns an
+    error response if the username is currently being used or the 
+    username contains non-alphanumeric characters. Otherwise return a
+    success response where `is_new_user` field is false if the username
+    has previously been registered.
 
     Args:
         msg (ChatMessage): The message received from client.
         app (AppState): The current app state.
-        socket (Socket): The socket to add connection with.
     
     Returns:
         ChatResponse: The response to client.        
     """
     try:
-        is_existing = app.add_connection(msg.username, socket)
+        is_new_user = app.register_user(msg.username)
+    except InvalidUserError as e:
+        logging.debug(f"Cannot register username '{msg.username}': {e}")
+        res = RegisterResponse(success=False, error=str(e))
     except ValueError as e:
         logging.debug(f"Cannot register username '{msg.username}': {e}")
         res = RegisterResponse(success=False, error=str(e))
     else:
-        res = RegisterResponse(success=True)
+        res = RegisterResponse(success=True, is_new_user=is_new_user)
     finally:
         return res
 
@@ -164,16 +170,23 @@ def _delete_service(msg, app):
 
 def handle_message(msg, app, socket):
     """
-    Route a Message instance to the appropriate service
+    Route a Message instance to the appropriate service.
+
+    Args:
+        msg (str): The string to be deserialized.
+        app (AppState): The app state.
+        socket (Socket): The client socket that sent message.
     Returns:
         Response
     """
     logging.debug(f"Handling message from {socket.getsockname()}")
 
-    # Note: For now, `_handle_register_message` needs
-    # to be passed the socket to register the connection. 
     if isinstance(msg, RegisterMessage):
-        res = _register_service(msg, app, socket)
+        res = _register_service(msg, app)
+        # If the response is a successful register response,
+        # add the current socket as the user's socket
+        if res.success:
+            app.add_connection(msg.username, socket)
     elif isinstance(msg, ChatMessage):
         res = _chat_service(msg, app)
     elif isinstance(msg, ListMessage):
@@ -226,13 +239,12 @@ def client_thread(cs, app):
                 return
             # Otherwise, decode the buffer and handle each message
             else:
-                msgs = decode_server_buffer(buffer)
+                msgs = decode_client_buffer(buffer)
                 for msg in msgs:
                     # Handle message and return response to client
                     res = handle_message(msg, app, cs)
                     # Send the response in byte format
                     cs.send(res.encode_())
-
 
 
 while True:

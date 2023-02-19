@@ -48,15 +48,21 @@ def test_list_users(app_state):
 
 def test_register_user(app_state):
     # Check that the correct exceptions are raised
-    with pytest.raises(ValueError) as excinfo1:
+    with pytest.raises(InvalidUserError) as excinfo1:
         app_state.register_user("John")
     with pytest.raises(ValueError) as excinfo2:
         app_state.register_user("...")
-    assert str(excinfo1.value) == "Username is already registered."
+    assert str(excinfo1.value) == "Username is already in use."
     assert str(excinfo2.value) == "Username must contain only alphanumeric characters only."
 
     # Check that registering a valid username is successful
-    app_state.register_user("Dan")
+    is_new_user = app_state.register_user("Dan")
+    assert is_new_user
+    assert app_state._users == set(["John", "Jane", "Bob", "Dan"])
+    
+    # Check registering an inactive username
+    is_new_user = app_state.register_user("Bob")
+    assert not is_new_user
     assert app_state._users == set(["John", "Jane", "Bob", "Dan"])
 
 def test_delete_user(app_state):
@@ -83,19 +89,18 @@ def test_delete_user(app_state):
 
 def test_add_connection(app_state):
     # Test adding a username currently being used
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(InvalidUserError) as excinfo:
         app_state.add_connection("John", 3)
-    assert str(excinfo.value) == "Username is currently being used."
+    assert str(excinfo.value) == "Username is already connected to a socket."
 
-    # Test existing user login, should return True.
-    is_existing = app_state.add_connection("Bob", 3)
-    assert is_existing 
-    assert app_state._connections == {"John": 1, "Jane": 2, "Bob": 3}
+    # Test adding a socket currently being used
+    with pytest.raises(ValueError) as excinfo:
+        app_state.add_connection("Dan", 2)
+    assert str(excinfo.value) == "Socket is already associated with another user."
 
-    # Test registering a new username
-    is_existing = app_state.add_connection("Dan", 4)
-    assert not is_existing
-    assert app_state._connections == {"John": 1, "Jane": 2, "Bob": 3, "Dan": 4}
+    # Test success case
+    app_state.add_connection("Dan", 3)
+    assert app_state._connections["Dan"] == 3
 
 def test_remove_connection(app_state):
     app_state.remove_connection(2)
