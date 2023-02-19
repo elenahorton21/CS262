@@ -75,6 +75,9 @@ def _register_service(msg, app):
     """
     try:
         is_new_user = app.register_user(msg.username)
+    except InvalidUserError as e:
+        logging.debug(f"Cannot register username '{msg.username}': {e}")
+        res = RegisterResponse(success=False, error=str(e))
     except ValueError as e:
         logging.debug(f"Cannot register username '{msg.username}': {e}")
         res = RegisterResponse(success=False, error=str(e))
