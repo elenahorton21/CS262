@@ -5,6 +5,7 @@ TODO: Refactor to make cleaner.
 TODO: Better control, right now control flow is quite messy, e.g. using
 `return` to exit out of some loops. Maybe use `exit()` instead?
 TODO: Might want to use a thread for listening as in `client_ex.py`.
+TODO: Add a way for client to gracefully exit, e.g. "/quit".
 """
 import socket
 import select
