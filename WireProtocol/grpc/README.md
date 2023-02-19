@@ -73,5 +73,4 @@ Some big decisions that were made:
 
 
 # Future Work
-1) Unit tests
-2) Performance differences/ buffer sizes with gRPC
+1) Unit tests for grpc
