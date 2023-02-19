@@ -22,6 +22,8 @@ logging.basicConfig(level=logging.DEBUG,
 
 # Configuration
 MAX_BUFFER_SIZE = config["MAX_BUFFER_SIZE"]
+SERVER_HOST = config["SERVER_HOST"]
+SERVER_PORT = config["SERVER_PORT"]
 
 
 def _authenticate(server):
@@ -164,7 +166,7 @@ if __name__ == "__main__":
     #     exit()
     # IP_address = str(sys.argv[1])
     # port = int(sys.argv[2])
-    IP_address = "127.0.0.1"
-    port = 5002 # server's port
+    IP_address = SERVER_HOST
+    port = SERVER_PORT # server's port
 
     run(IP_address, port)
