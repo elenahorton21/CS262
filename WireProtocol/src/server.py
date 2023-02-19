@@ -1,5 +1,7 @@
 """
 Implementation of server for chat application.
+
+# TODO: Maybe add a graceful exit for server as well.
 """
 import socket
 from threading import Thread
@@ -133,7 +135,7 @@ def _chat_service(msg, app):
 
 def _list_service(msg, app):
     """
-    Service fo handling ListMessage.
+    Service for handling ListMessage.
     TODO: Change to wildcard functionality. Right now this just lists all users.
     """
     users = app.list_users(wildcard=msg.wildcard)

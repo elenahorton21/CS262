@@ -77,11 +77,17 @@ def _display_message(msg):
     NOTE: Use this to modify formatting for messages, e.g. adding time, colors, etc.
     See `client_ex.py` for an example of this.
     TODO: I think the format should look different
+
+    Args:
+        msg (Message): A Message instance received from server.
+    
+    Returns:
+        None
     """
     if isinstance(msg, BroadcastMessage):
         # Different formating for direct messages
         if msg.direct:
-            print(f"<<{msg.sender}: {msg.text}")
+            print(f"{msg.sender}>>{msg.direct}: {msg.text}")
         else:
             print(f"{msg.sender}: {msg.text}")
     elif isinstance(msg, ListResponse):
@@ -105,6 +111,13 @@ def _message_from_input(input, username):
     """
     Convert the user input into a Message object.
     TODO: Cleaner handling of converting input to message data, e.g. strip whitespace.
+    
+    Args:
+        input (str): The input read from sys.stind.
+        username (str): The username of client.
+
+    Returns:
+        Message: The message to send to server.
     """
     if input.startswith("/list"):
         if len(input.split(" ")) == 1:

@@ -71,7 +71,7 @@ class RegisterMessage(Message):
 
 class ChatMessage(Message):
     """
-    Message from client to server requesting message sent.
+    Client message for sending a chat.
     """
     enc_header = "MSG"
     text_char_lim = 280 # Maximum number of characters for each message
@@ -102,6 +102,7 @@ class ChatMessage(Message):
 
         
 class ListMessage(Message):
+    """Client message for listing users."""
     enc_header = "LST"
 
     def __init__(self, wildcard=None):
@@ -113,6 +114,7 @@ class ListMessage(Message):
 
 
 class DeleteMessage(Message):
+    """Client message for deleting a user."""
     enc_header = "DEL"
 
     def __init__(self, username):
@@ -120,6 +122,11 @@ class DeleteMessage(Message):
 
     def _data_items(self):
         return [self.username]
+
+
+class QueueMessage(Message):
+    """Client message for requesting queued messages."""
+    enc_header = "QUE"
 
 
 ####################
@@ -214,14 +221,22 @@ class BroadcastMessage(Message):
     """
     enc_header = "BRO"
 
-    def __init__(self, sender, text, direct=False):
+    def __init__(self, sender, text, direct=None):
+        """
+        Initialize BroadcastMessage.
+
+        Args:
+            sender (str): The username of the sender.
+            text (str): The text of the chat message.
+            direct (str): The username of the recipient if direct message, else None.
+        """
         self.sender = sender
         self.text = text
         self.direct = direct
 
     def _data_items(self):
-        # Cast self.direct to string representation
-        direct_str = str(int(self.direct)) 
+        # If `direct` is None, represent with empty string
+        direct_str = self.direct if self.direct else "" 
         return [self.sender, direct_str, self.text]
     
 
@@ -277,7 +292,8 @@ def _deserialize_server_message(msg):
         users = content[3:] if len(content) > 2 else None
         return ListResponse(success=bool(int(content[1])), error=content[2], users=users)
     elif content[0] == BroadcastMessage.enc_header:
-        return BroadcastMessage(sender=content[1], direct=bool(int(content[2])), text=content[3])
+        direct = direct if direct else None
+        return BroadcastMessage(sender=content[1], direct=direct, text=content[3])
     else:
         raise ValueError("Unknown message type header received from server.")
     
