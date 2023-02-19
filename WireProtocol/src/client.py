@@ -37,6 +37,13 @@ def _authenticate(server):
     TODO: Might want to refactor, unsure about the nested while loops.
     TODO: What other messages could be expected? Depends on behavior we want for
     unauthenticated clients.
+
+    Args:
+        server (Socket): The socket to send register message to.
+
+    Returns:
+        Tuple[str, bool]: The first argument is the username, and the
+            second argument is whether the user is new or returning.
     """
     while True:
         username = input("Enter your username:")
@@ -58,7 +65,7 @@ def _authenticate(server):
             
             # If success response, return the username for future use
             if res.success:
-                return username
+                return username, res.is_new_user
             else:
                 print(res.error)
                 break
@@ -128,12 +135,16 @@ def run(IP_address, port):
         # _authenticate will loop until a username is successfully registered
         # If the server disconnects during this process, it will raise ConnectionError
         try:
-            username = _authenticate(server)
+            username, is_new_user = _authenticate(server)
         except ConnectionError as _:
             print("Server disconnected.")
             return
 
-        print(f"Welcome to the chatroom {username}!")
+        # Print different messages depending on if new user
+        if is_new_user:
+            print(f"Welcome to the chatroom {username}!")
+        else:
+            print(f"Welcome back {username}!")
 
         while True:
             # TODO: Understand the use of select here.
