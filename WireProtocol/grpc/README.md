@@ -52,9 +52,11 @@ This code has three main components, along with supplemental files:
 
 # Differences from non-gRPC Implementation
 
-1) Handing states on the client side rather than the server side
+1) The primary difference is that the grpc implementation is handing states on the client side rather than the server side. Since there was no clear way to keep track of client connections, the client has a thread, in our case, the `ServerThread` class, that constantly polls the server for new messages. As a result, the client has to keep track of whether or not it is logged in and communicate that to the server, which also creates our greatest limitation of not being able to successfully logout if the client does not explicitly do so. 
 
-2) Differences in behavior --> logging out
+2) Due to the simplified design of gRPC, this also means that the structure of our modules look different between the non-GRPC and GRPC implementations. Because the client can just call remotely to the server, we structure our gRPC server to simply execute these calls, making function calls directly to the `App` object that holds our application's state. In the non-gRPC implementation, several function calls are used to properly create the message protocol and safely access the application resources by passing the client connection details between modules. However, in the gRPC case, the application is tracking client connecetions for us, so none of that code is necessary. Consequently, our gRPC app has a simpler design. 
+
+3) Performance and buffer sizes--> in our application, there is not an obvious difference other than slower delivery of messages to the client in the gRPC case because of the client's `ServerThread` polling for new messages. This is a design choice, and less reflective of the actual latency of gRPC vs. sockets. For a chat application with limited large data transfer, the use of pure sockets still appears faster --> communication is instantaneous without the need for app layer translations in gRPC. However, if this application were to grow to handling larger data streams, gRPC would be a much more efficient way of packaging this information. 
 
 # Engineering Notebook
 
@@ -64,10 +66,12 @@ Some big decisions that were made:
     - creating a `ServerThread` class to contantly poll the server using the `GetMessage` function. If it gets a message indicating that the client has been logged out, it returns this and the thread exits after alerting the client that they have been logged out. The thread keeps track of this by having an internal state `self.logged_in`.
     - creating a `logged_in` boolean value within the client that keeps track of whether or not the client is logged in. The client only can perform actions as usual if both the recieving `ServerThread` and the client itself have these values as `True`. Otherwise, the client is logged out and the application will gracefully exit. 
 
-2) Redesigning the server code to be simplified for the gRPC scenario.
+2) Redesigning the server code to be simplified for the gRPC scenario. Once we started working on the gRPC scenario, it became clear that our existing code was overly complex for what we needed in the gRPC world. Because gRPC is able to keep track of client connections for us, we didn't need to be passing client connection information between the server module and App object, and the App object didn't need a field for client connections. We changed the structure to just keep track of client usernames and their associated messages, and it is now the client's responsibility to ask for those messages to be delivered (in our solution, the client is doing this continuously). There are more implications of this and decisions made along the way:
+    - Simplify the client to just handle user input and make direct calls to the server. This simplified the logic to most of it being handled in the `handle_user_input` function. 
+    - Simplify the `App` class to only include users and their messages. We added a `.logged_in` field to the `User` class as a way to explicitly track if the user is logged in or not based on calls from the client (i.e. `register` and `logout`). This is what prevents a user from logging in on multiple sessions at once. 
+    - The `grpc_server.py` module now is just one function for each explicit user action all held within the `Chat` class. All of the logic for handling each use case is in there, and the only other function is the main `run` loop which instantiates the gRPC connection and starts the server. 
 
-3) Simplifying the app code for the gRPC scenario--> no need to keep track of conenections.
 
 # Future Work
-3) Unit tests
-5) Write an engineering notebook/fill out the contents of this readme
+1) Unit tests
+2) Performance differences/ buffer sizes with gRPC
