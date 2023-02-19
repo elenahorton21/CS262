@@ -7,8 +7,12 @@ import chat_pb2_grpc
 import grpc
 from threading import Thread
 from time import sleep
+from config import config
 
-MAX_BUFFER_SIZE = 1024
+# Configuration
+MAX_BUFFER_SIZE = config["MAX_BUFFER_SIZE"]
+SERVER_ADDRESS = config["SERVER_ADDRESS"]
+SERVER_PORT = config["SERVER_PORT"]
 
 
 # main function for handling the user input and translating it into messages or commands
@@ -175,13 +179,6 @@ def run(IPaddress, port):
             
 
 if __name__ == "__main__":
-    # parse and check arguments
-    # TODO: Add defaults and better input handling
-    if len(sys.argv) != 3:
-        print ("Correct usage: script, IP address, port number")
-        exit()
-    IP_address = str(sys.argv[1])
-    port = int(sys.argv[2])
-    # IP_address = "127.0.0.1"
-    # port = 50015 # server's port
+    IP_address = SERVER_ADDRESS
+    port = SERVER_PORT
     run(IP_address, port)
