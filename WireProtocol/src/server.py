@@ -170,6 +170,28 @@ def _delete_service(msg, app):
         return res
 
 
+def _queue_service(msg, app):
+    """
+    Service for delivering queued messages to a user.
+
+    TODO: Still doesn't handle the edge case robustly.
+    """
+    queued_msgs = app.get_queued_messages(msg.username)
+
+    # If no messages, return error response
+    if not queued_msgs:
+        return QueueResponse(success=False, error="No messages in queue.")
+    
+    # Roundabout way of getting client socket
+    cs = app.get_user_connection(msg.sender)
+
+    # Encode the messages into concantenated byte strings with max length
+    for data in encode_msg_queue(queued_msgs):
+        cs.send(data)
+
+    return QueueResponse(success=True)
+
+
 def handle_message(msg, app, socket):
     """
     Route a Message instance to the appropriate service.
@@ -195,6 +217,8 @@ def handle_message(msg, app, socket):
         res = _list_service(msg, app)
     elif isinstance(msg, DeleteMessage):
         res = _delete_service(msg, app)
+    elif isinstance(msg, QueueMessage):
+        res = _queue_service(msg, app)
     else:
         raise NotImplementedError
     

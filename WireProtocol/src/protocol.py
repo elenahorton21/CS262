@@ -97,8 +97,7 @@ class ChatMessage(Message):
         TODO: Putting this here in case we have some formatting stuff, e.g. removing
         certain characters.
         """
-        direct = (self.recipient != None)
-        return BroadcastMessage(sender=self.sender, direct=direct, text=self.text)
+        return BroadcastMessage(sender=self.sender, direct=self.recipient, text=self.text)
 
         
 class ListMessage(Message):
@@ -125,13 +124,43 @@ class DeleteMessage(Message):
 
 
 class QueueMessage(Message):
-    """Client message for requesting queued messages."""
+    """Client message for requesting queued messages.
+    TODO: Should only be able to get queued messages for yourself.
+    """
     enc_header = "QUE"
+
+    def __init__(self, username):
+        self.username = username
 
 
 ####################
 ### Server Messages
 ####################
+
+class BroadcastMessage(Message):
+    """Class for server's execution of ChatMessage requests.
+    TODO: Can add metadata like when the message was sent.
+    """
+    enc_header = "BRO"
+
+    def __init__(self, sender, text, direct=None):
+        """
+        Initialize BroadcastMessage.
+
+        Args:
+            sender (str): The username of the sender.
+            text (str): The text of the chat message.
+            direct (str): The username of the recipient if direct message, else None.
+        """
+        self.sender = sender
+        self.text = text
+        self.direct = direct
+
+    def _data_items(self):
+        # If `direct` is None, represent with empty string
+        direct_str = self.direct if self.direct else "" 
+        return [self.sender, direct_str, self.text]
+    
 
 class Response(Message):
     """
@@ -175,7 +204,7 @@ class RegisterResponse(Response):
         # If `is_new_user` is None, it is an error response. Include an empty
         # string in place of this field.
         new_user_str = str(int(self.is_new_user)) if self.is_new_user != None else ""
-        return super()._data_items() + [str(int(self.is_new_user))]
+        return super()._data_items() + [new_user_str]
     
     
 class ChatResponse(Response):
@@ -215,30 +244,44 @@ class DeleteResponse(Response):
     enc_header = "RESD"
 
 
-class BroadcastMessage(Message):
-    """Class for server's execution of ChatMessage requests.
-    TODO: Can add metadata like when the message was sent.
+class QueueResponse(Response):
+    """Response for requesting queued messages. The actual messages
+    are sent separately."""
+    enc_header = "RESQ"
+
+
+def encode_msg_queue(msgs):
     """
-    enc_header = "BRO"
+    Function that takes a list of BroadcastMessage instances and returns
+    a list of byte strings, where each string is at most MAX_BUFFER_SIZE.
 
-    def __init__(self, sender, text, direct=None):
-        """
-        Initialize BroadcastMessage.
+    Args:
+        msgs (List[BroadcastMessage]): The queued messages.
 
-        Args:
-            sender (str): The username of the sender.
-            text (str): The text of the chat message.
-            direct (str): The username of the recipient if direct message, else None.
-        """
-        self.sender = sender
-        self.text = text
-        self.direct = direct
+    Returns:
+        List[byte str]
+    """
+    # List of byte strings 
+    out = []
 
-    def _data_items(self):
-        # If `direct` is None, represent with empty string
-        direct_str = self.direct if self.direct else "" 
-        return [self.sender, direct_str, self.text]
-    
+    data = b""
+    for msg in msgs:
+        # Add the encoded byte string to 
+        encoded = msg.encode_()
+        # Check that adding message doesn't exceed MAX_BUFFER_SIZE
+        if len(encoded) + len(data) < MAX_BUFFER_SIZE:
+            data += encoded
+        # Otherwise append `data` and start a new byte string
+        else:
+            out.append(data)
+            data = encoded
+
+    # Append remaining data
+    if data:
+        out.append(data)
+        
+    return out
+
 
 ####################
 ### Decoding
@@ -266,6 +309,8 @@ def _deserialize_client_message(msg):
         return ListMessage(wildcard=wildcard)
     elif content[0] == DeleteMessage.enc_header:
         return DeleteMessage(username=content[1])
+    elif content[0] == QueueMessage.enc_header:
+        return QueueMessage(username=content[1])
     else:
       raise ValueError("Unknown message type header received from client.")
 
@@ -292,8 +337,10 @@ def _deserialize_server_message(msg):
         users = content[3:] if len(content) > 2 else None
         return ListResponse(success=bool(int(content[1])), error=content[2], users=users)
     elif content[0] == BroadcastMessage.enc_header:
-        direct = direct if direct else None
+        direct = content[2] if content[2] != "" else None
         return BroadcastMessage(sender=content[1], direct=direct, text=content[3])
+    elif content[0] == QueueResponse.enc_header:
+        return QueueResponse(success=bool(int(content[1])), error=content[2])
     else:
         raise ValueError("Unknown message type header received from server.")
     

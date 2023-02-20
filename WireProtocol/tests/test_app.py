@@ -118,3 +118,8 @@ def test_queue_message(app_state):
     # Test adding a message to existing queue
     app_state.queue_message("Bob", "Hi")
     assert app_state._msg_queue["Bob"] == ["Hello", "What's up?", "Hi"]
+
+def test_get_queued_messages(app_state):
+    res = app_state.get_queued_messages("Bob")
+
+    assert res == ["Hello", "What's up?"]

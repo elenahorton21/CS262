@@ -128,6 +128,9 @@ def _message_from_input(input, username):
     elif input.startswith("/delete"):
         input = input.strip()
         return DeleteMessage(username=input.split(" ")[1])
+    elif input.startswith("/queue"):
+        input = input.strip()
+        return QueueMessage(username=input.split(" ")[1])
     # user requesting to send a direct message to a specified recipient
     elif input.startswith(">>"):
         msgList = input.split(":")

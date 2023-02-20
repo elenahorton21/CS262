@@ -153,6 +153,24 @@ class AppState:
         else:
             self._msg_queue[username] = [msg]
 
+    def get_queued_messages(self, username):
+        """
+        Return the queued messages for the user.
+        
+        Args:
+            username (str): The user's username.
+        
+        Returns:
+            List[BroadcastMessage]: The messages in the user's message queue.
+        
+        Raises:
+            InvalidUserError: If the user is not registered.
+        """
+        if not self.is_valid_user(username):
+            raise InvalidUserError()
+        
+        # If no messages, return empty list
+        return self._msg_queue.get(username, [])
 
 # class SafeAppState extends AppState with lock functionality
 # https://www.bogotobogo.com/python/Multithread/python_multithreading_Synchronization_Lock_Objects_Acquire_Release.php

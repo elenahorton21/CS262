@@ -3,27 +3,39 @@ from testfixtures import compare
 
 from src.protocol import *
 
+# TODO: Test edge cases where text exceeds buffer limits.
 
-def test_decode_server_buffer():
-    # Create a buffer with multiple messages
+@pytest.fixture
+def queued_msgs():
+    """A list of BroadcastMessage instances."""
     msg1 = BroadcastMessage(sender="John", text="Hello")
-    msg2 = ChatResponse(success=1)
+    msg2 = BroadcastMessage(sender="John", text="What's up?")
     msg3 = BroadcastMessage(sender="Joe", text="How's it going?")
+
+    return [msg1, msg2, msg3]
+
+
+def test_decode_server_buffer(queued_msgs):
     # Concatenate with an empty byte string
-    buffer = b"".join([msg1.encode_(), msg2.encode_(), msg3.encode_()])
+    buffer = b"".join([msg.encode_() for msg in queued_msgs])
 
     msgs = decode_server_buffer(buffer)
 
     # `compare` lets us easily check that the parameters are equal
     # even though the instances are different
-    compare(msgs[0], msg1)
-    compare(msgs[1], msg2)
-    compare(msgs[2], msg3)
+    compare(msgs[0], queued_msgs[0])
+    compare(msgs[1], queued_msgs[1])
+    compare(msgs[2], queued_msgs[2])
 
+# TODO: Finish
+def test_encode_msg_queue(queued_msgs):
+    res = encode_msg_queue(queued_msgs)
+    print(res)
 
+    assert True
 
 # def test_from_str_register():
-#   text = "USERNAME|John"
+#   text = "USERNAME|John" . . 
 #   msg = Message.from_str(text)
 #   assert msg.msg_type == MessageType.REGISTER
 #   assert msg.data == {"username": "John"}
