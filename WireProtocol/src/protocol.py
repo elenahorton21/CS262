@@ -132,6 +132,9 @@ class QueueMessage(Message):
     def __init__(self, username):
         self.username = username
 
+    def _data_items(self):
+        return [self.username]
+
 
 ####################
 ### Server Messages
@@ -287,7 +290,7 @@ def encode_msg_queue(msgs):
 ### Decoding
 ####################
 
-def _deserialize_client_message(msg):
+def deserialize_client_message(msg):
     """
     Factory method for deserializing a message string to appropriate Message subclass.
     
@@ -305,7 +308,7 @@ def _deserialize_client_message(msg):
         recipient = None if content[2] == "^" else content[2]
         return ChatMessage(sender=content[1], recipient=recipient, text=content[3])
     elif content[0] == ListMessage.enc_header:
-        wildcard = content[1] if len(content) > 1 else None
+        wildcard = content[1] if content[1] != "*" else None
         return ListMessage(wildcard=wildcard)
     elif content[0] == DeleteMessage.enc_header:
         return DeleteMessage(username=content[1])
@@ -315,7 +318,7 @@ def _deserialize_client_message(msg):
       raise ValueError("Unknown message type header received from client.")
 
 
-def _deserialize_server_message(msg):
+def deserialize_server_message(msg):
     """
     Factory method for deserializing a message string to appropriate Message subclass.
     
@@ -328,7 +331,8 @@ def _deserialize_server_message(msg):
     content = msg.split(Message.separator_token)
 
     if content[0] == RegisterResponse.enc_header:
-        return RegisterResponse(success=bool(int(content[1])), error=content[2], is_new_user=content[3])
+        is_new_user = content[3] if content[3] else None
+        return RegisterResponse(success=bool(int(content[1])), error=content[2], is_new_user=is_new_user)
     elif content[0] == ChatResponse.enc_header:
         return ChatResponse(success=bool(int(content[1])), error=content[2])
     elif content[0] == DeleteResponse.enc_header:
@@ -388,11 +392,11 @@ def _decode_buffer(deserialize_fn):
 
 
 # Function for decoding a buffer on the client side
-decode_client_buffer = _decode_buffer(_deserialize_client_message)
+decode_client_buffer = _decode_buffer(deserialize_client_message)
 
 
 # Function for decoding a buffer on the server side
-decode_server_buffer = _decode_buffer(_deserialize_server_message)
+decode_server_buffer = _decode_buffer(deserialize_server_message)
 
 
 

@@ -125,8 +125,8 @@ def chat_service(msg, app):
 
 def list_service(msg, app):
     """
-    Service for handling ListMessage.
-    TODO: Change to wildcard functionality. Right now this just lists all users.
+    Service for handling ListMessage. Will match the wildcard as a regex
+    expression, or return all users if wildcard is None.
     """
     users = app.list_users(wildcard=msg.wildcard)
     res = ListResponse(success=True, users=users)

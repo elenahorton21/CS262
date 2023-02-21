@@ -1,6 +1,8 @@
 """
 Python program to implement client side of chat application.
 
+TODO: Input should be cleared of separator token, otherwise that 
+will mess up message.
 TODO: Refactor to make cleaner.
 TODO: Better control, right now control flow is quite messy, e.g. using
 `return` to exit out of some loops. Maybe use `exit()` instead?

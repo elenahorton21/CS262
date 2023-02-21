@@ -32,6 +32,11 @@ def app_state_data():
     return {"users": users, "connections": connections, "msg_queue": msg_queue}
 
 
+def assert_elements_equal(list1, list2):
+    """Returns True if the lists have the same items, regardless of order."""
+    return len(list1) == len(list2) and not set(list1) ^ set(list2)
+
+
 def test_register_new_user(app_state):
     # Registering valid new username
     msg = RegisterMessage(username="Jill")
@@ -133,7 +138,11 @@ def test_chat_inactive_user(mock_broadcast, app_state_data):
 
 def test_list_users(app_state):
     # TODO: Test after implementing wildcard.
-    assert False
+    msg = ListMessage(wildcard=".*o")
+    res = list_service(msg, app_state)
+
+    assert res.success
+    assert_elements_equal(res.users, ["John", "Bob"])
 
 
 def test_delete_valid_user(app_state):

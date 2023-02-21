@@ -4,6 +4,8 @@ active connections, and queued messages for inactive users.
 
 TODO: Implement locking for race conditions in SafeAppState class.
 """
+import re
+
 
 class InvalidUserError(Exception):
     """Raised in cases where the username is invalid, i.e. not registered."""
@@ -63,9 +65,12 @@ class AppState:
     def list_users(self, wildcard=None):
         """
         Return a list of all registered usernames.
-        TODO: Handle wildcards.
+        TODO: Define behavior. Right now just mimics re.match logic.
         """
-        return list(self._users)
+        if not wildcard:
+            return list(self._users)
+        
+        return [user for user in self._users if re.match(wildcard, user)]
   
     def register_user(self, username):
         """

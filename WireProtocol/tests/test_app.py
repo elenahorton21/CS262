@@ -4,8 +4,8 @@ Testing AppState functionality.
 NOTE: Using integers in place of Socket objects for connections.
 NOTE: Using strings instead of BroadcastMessage objects for message queue values.
 """
-
 import pytest
+from testfixtures import compare
 
 from src.app import AppState, InvalidUserError
 
@@ -26,9 +26,9 @@ def empty_app_state():
     return AppState()
 
 
-def list_members_equal(list1, list2):
+def assert_elements_equal(list1, list2):
     """Returns True if the lists have the same items, regardless of order."""
-    return not set(list1) ^ set(list2)
+    return len(list1) == len(list2) and not set(list1) ^ set(list2)
 
 
 def test__get_connection_username(app_state):
@@ -42,7 +42,7 @@ def test_is_valid_user(app_state):
 
 
 def test_get_all_connections(app_state):
-    assert list_members_equal(app_state.get_all_connections(), [1, 2])
+    compare(app_state.get_all_connections(), [1, 2])
 
 
 def test_get_user_connection(app_state):
@@ -50,8 +50,16 @@ def test_get_user_connection(app_state):
     assert app_state.get_user_connection("Bob") == None
 
 
-def test_list_users(app_state):
-    assert list_members_equal(app_state.list_users(), ["John", "Jane", "Bob"])
+def test_list_all_users(app_state):
+    listed = app_state.list_users()
+    expected = ["John", "Jane", "Bob"]
+    compare(set(listed), set(expected))
+
+
+def test_list_users_wildcard(app_state):
+    listed = app_state.list_users(".*o")
+    expected = ["John", "Bob"]
+    assert_elements_equal(listed, expected)
 
 
 def test_register_invalid_username(app_state):
