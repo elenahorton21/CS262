@@ -12,8 +12,8 @@ import select
 import sys
 import logging
 
-from protocol import *
-from config import config
+from .protocol import *
+from .config import config
 
 
 # Logging

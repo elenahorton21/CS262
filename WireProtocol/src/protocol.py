@@ -6,17 +6,17 @@ dependent on the message type.
 NOTE: We can modify these classes to encode header-body messages to handle potential buffer issues.
 TODO: pytest is throwing errors when I import config.
 """
-# from config import config
 import logging
 
-
-# MAX_BUFFER_SIZE = config["MAX_BUFFER_SIZE"]
-MAX_BUFFER_SIZE = 1024
+from src.config import config
 
 
 # Logging
 logging.basicConfig(level=logging.DEBUG,
                     format='(%(threadName)-9s) %(message)s',)
+
+
+MAX_BUFFER_SIZE = config["MAX_BUFFER_SIZE"]
 
 
 class Message:
