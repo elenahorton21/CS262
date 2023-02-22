@@ -1,11 +1,11 @@
 from concurrent import futures
 
 import grpc
-import chat_pb2
-import chat_pb2_grpc
-from app import App
+from . import chat_pb2
+from . import chat_pb2_grpc
+from .app import App
 import logging
-from config import config
+from .config import config
 
 chatServer = App()
 
@@ -46,7 +46,7 @@ class Chat(chat_pb2_grpc.ChatServicer):
         from_user = request.from_user
         to_user = request.to_user
         msg = request.message
-        print("sending message from: " + from_user + " to: " + to_user)
+        print("sending message from: " + from_user + " to: " + str(to_user))
         result = chatServer.send_message(from_user, to_user, msg)
         return chat_pb2.ChatReply(message = result)
 

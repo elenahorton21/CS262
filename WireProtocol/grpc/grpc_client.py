@@ -2,12 +2,12 @@
 Python program to implement client side of chat application.
 """
 import sys
-import chat_pb2
-import chat_pb2_grpc
+from . import chat_pb2
+from . import chat_pb2_grpc
 import grpc
 from threading import Thread
 from time import sleep
-from config import config
+from .config import config
 
 # Configuration
 MAX_BUFFER_SIZE = config["MAX_BUFFER_SIZE"]

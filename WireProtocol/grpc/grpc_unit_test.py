@@ -1,6 +1,7 @@
-from app import App, User, Message
-from grpc_server import Chat
+from .app import App, User, Message
+from .grpc_server import Chat
 import unittest
+from unittest.mock import patch
 
 class MockGRPCServerReply:
     def __init__(self, response):
@@ -10,15 +11,28 @@ class MockUserRequest:
     def __init__(self, username):
         self.username = username
 
+class MockGetRequest:
+    def __init__(self, user):
+        self.user = user
+
+class MockDeleteRequest:
+    def __init__(self, from_user, to_user):
+        self.from_user = from_user
+        self.to_user = to_user
+
 class MockMessageRequest:
-    def __init__(self, user_from, user_to, message):
-        self.user_from = user_from
-        self.user_to = user_to
+    def __init__(self, from_user, to_user, message):
+        self.from_user = from_user
+        self.to_user = to_user
         self.message = message
 
+class MockListRequest:
+    def __init__(self, wildcard):
+        self.wildcard = wildcard
+
 class MockChatReply:
-    def __init__(self):
-       self.message = ""
+    def __init__(self, message):
+       self.message = message
 
     def ChatReply(self, message):
         self.message = message
@@ -120,4 +134,93 @@ class GRPCTest(unittest.TestCase):
         msg = Message(self.username, self.message)
         self.assertEqual(self.username, msg.from_user)
         self.assertEqual(self.message, msg.message)
+
+    def test_grpc(self):
+
+        with patch('grpc.chat_pb2') as mock_server_reply:
+            mock_server_reply.ChatReply.message = MockChatReply(mock_server_reply.message)
+            grpc_server = Chat()
+
+            # Registering a user: 3 cases to test
+            # Case 1: register a new user
+            user_request = MockUserRequest(self.username)
+            self.assertEqual("SUCCESS", grpc_server.create_user(user_request, "").message)
+
+            # case 2: try to register a user that already exists, repeat the call, different response
+            self.assertEqual("This username is already logged in. Please choose another one.", grpc_server.create_user(user_request, "").message)
+
+            # try to logout the user
+            self.assertEqual("SUCCESS", grpc_server.logout_user(user_request, "").message)
+
+            # Case 3: now try to return as the same user
+            self.assertEqual("Welcome back " + self.username + " !", grpc_server.create_user(user_request, "").message)
+
+            ##---- Sending a message: 3 cases to test ---##
+
+            # first, create two new users
+            user_request2 = MockUserRequest(self.user2)
+            user_request3 = MockUserRequest(self.user3)
+            self.assertEqual("SUCCESS", grpc_server.create_user(user_request2, "").message)
+            self.assertEqual("SUCCESS", grpc_server.create_user(user_request3, "").message)
+            
+            # Case 1: Send a message to all
+            message_request = MockMessageRequest(from_user=self.username, to_user=None, message=self.message)
+            self.assertEqual("Success",grpc_server.send_message(message_request, "").message)
+
+            # Case 2: Send a message to a specific user
+            message_request = MockMessageRequest(from_user=self.username, to_user=self.user2, message=self.message)
+            self.assertEqual("Success",grpc_server.send_message(message_request, "").message)
+
+            # Case 3: Send a message to a user that doesn't exist
+            message_request = MockMessageRequest(from_user=self.username, to_user="fakeUser", message=self.message)
+            self.assertEqual("Error: User fakeUser does not exist.",grpc_server.send_message(message_request, "").message)
+
+            # Test listing users, 3 cases
+
+            # test listing all users
+            message_request = MockListRequest(wildcard="")
+            self.assertEqual("elena, jerry, newbie, ", grpc_server.list_users(message_request, "").message)
+
+            # test listing with existing wildcard
+            message_request = MockListRequest(wildcard=".*r")
+            self.assertEqual("jerry, ", grpc_server.list_users(message_request, "").message)
+
+            # test listing with no matching users
+            message_request = MockListRequest(wildcard=".*z")
+            self.assertEqual("No users to list.", grpc_server.list_users(message_request, "").message)
+
+            # Test deleting a user, 2 cases
+
+            # test deleting a user that doesn't exist
+            delete_request = MockDeleteRequest(self.username, "fakeUser")
+            self.assertEqual("Error: User fakeUser does not exist.", grpc_server.delete_user(delete_request, "").message)
+
+            # test deleting a known user
+            delete_request = MockDeleteRequest(self.username, self.user3)
+            self.assertEqual("Success.", grpc_server.delete_user(delete_request, "").message)
+
+
+            # test getting messages, 3 cases (logged in vs. logged out and no messages)
+
+            # logged in, getting messages (should have 2 messages from elena)
+            get_request = MockGetRequest(self.user2)
+            self.assertEqual(self.username + ": " + self.message, grpc_server.get_message(get_request, "").message)
+
+            # logged in, should have no messages
+            get_request = MockGetRequest(self.username)
+            self.assertEqual("NONE", grpc_server.get_message(get_request, "").message)
+
+            # logged out
+            user_request = MockUserRequest(self.username)
+            self.assertEqual("SUCCESS", grpc_server.logout_user(user_request, "").message)
+            
+            get_request = MockGetRequest(self.username)
+            self.assertEqual("LOGGED_OUT", grpc_server.get_message(get_request, "").message)
+
+
+
+
+
+            
+
 

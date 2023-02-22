@@ -13,6 +13,7 @@ class App:
         elif username in self.users and self.users[username].logged_in == True:
             return 1
         else:
+            self.users[username].logged_in = True # log back in
             return 2
     
     def send_message(self, from_user, to_user, message):
@@ -39,7 +40,7 @@ class App:
 
     
     def get_messages(self, username):
-        if username not in self.users:
+        if username not in self.users or self.users[username].logged_in == False:
             return 100
         elif len(self.users[username].messages) == 0:
             return "NONE"
