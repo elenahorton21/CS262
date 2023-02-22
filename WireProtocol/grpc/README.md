@@ -2,9 +2,9 @@
 This folder contains the grpc implementation of our chat app. There are several differences from our non-gRPC implementation, which we will explain throughout this document.
 
 # Usage
-To run this application, first start the server by running `python3 grpc_server.py`.
+To run this application, first start the server by running `python3 -m grpc_server`.
 
-Then, in another terminal window, start the client by running `python3 grpc_client.py`
+Then, in another terminal window (or a different device), start the client by running `python3 -m grpc_client`
 
 To configure the host and port you are running on, you must edit the `config.py` file in this `grpc` folder. 
 
@@ -31,7 +31,7 @@ Users must enter `/delete [account]` to delete an account. They can delete their
 
 To successfully exit the chat, users must log out by entering `/logout`. This will gracefully exit the chat and preserve the username so you can log back in later. 
 
-**LIMITATION**: In the gRPC implementation, if a client exits unexpectedly without logging out, then that username will be stale when the return later. The solution is to have another user delete their account, thus allowing the user to log in as if creating a new account.
+**LIMITATION**: In the gRPC implementation, if a client exits unexpectedly without logging out, then that username will be stale when the user returns later. The solution is to have another user delete their account, thus allowing the user to log in as if creating a new account.
 
 #### Getting messages
 

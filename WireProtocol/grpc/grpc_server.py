@@ -1,11 +1,11 @@
 from concurrent import futures
 
 import grpc
-from . import chat_pb2
-from . import chat_pb2_grpc
-from .app import App
+import chat_pb2
+import chat_pb2_grpc
+from app import App
 import logging
-from .config import config
+from config import config
 
 chatServer = App()
 
