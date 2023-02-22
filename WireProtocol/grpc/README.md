@@ -43,7 +43,10 @@ This code has three main components, along with supplemental files:
 1) `grpc_client.py`: This is the client module. It contains the gRPC stubs to invoke remote calls on the `grpc_server.py` module. All of the logic for running and handling user input is contained in this module.
 2) `grpc_server.py`: This is the server module. It contains all of functions that can be remotely called by the client. To handle the overall state and memory of the application, it passes calls to `app.py`.
 3) `app.py`: This is the app state class that our chat application uses to keep track of users and messages. The `grpc_server.py` instantiates an `App` object and, through calls from its clients, manipulates the object throughout its lifetime to keep track of new users, removed users, and messages associated with all users. 
-4) Supplemental files include `chat.proto`, our prototype definition file, `build_proto_file.sh`, a simple script to auto-generatre the associated grpc files `chat_pb2.py`, `chat_pb2_grpc.py`, and `chat_pb2.pyi`. `config.py` contains the pre-defined settings for maximum connections, max buffer length, hostname, port, and server IP address.  
+4) Supplemental files include `chat.proto`, our prototype definition file, `build_proto_file.sh`, a simple script to auto-generatre the associated grpc files `chat_pb2.py`, `chat_pb2_grpc.py`, and `chat_pb2.pyi`. `config.py` contains the pre-defined settings for maximum connections, max buffer length, hostname, port, and server IP address.
+
+# Testing
+You can run `pytest -v grpc_unit_test.py` to view the output of the unit tests on different aspects of the solution. 
 
 # Limitations
 
