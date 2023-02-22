@@ -179,7 +179,7 @@ def queue_service(msg, app):
         return QueueResponse(success=False, error="No messages in queue.")
     
     # Roundabout way of getting client socket
-    cs = app.get_user_connection(msg.sender)
+    cs = app.get_user_connection(msg.username)
 
     # Encode the messages into concantenated byte strings with max length
     for data in encode_msg_queue(queued_msgs):

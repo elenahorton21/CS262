@@ -156,7 +156,6 @@ def test_decode_server_buffer(queued_msgs):
 def test_encode_msg_queue(max_length_broadcast):
     queued_msgs = [max_length_broadcast for _ in range(20)] # 10 max length messages
     res = encode_msg_queue(queued_msgs)
-    
     # This should return 7 items
     assert len(res) == 7
     # Check that each item is less than MAX_BUFFER_SIZE

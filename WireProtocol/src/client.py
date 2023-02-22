@@ -76,6 +76,7 @@ def _authenticate(server):
 def _display_message(msg):
     """
     Display message on the client console.
+
     NOTE: Use this to modify formatting for messages, e.g. adding time, colors, etc.
     See `client_ex.py` for an example of this.
     TODO: I think the format should look different
@@ -93,6 +94,10 @@ def _display_message(msg):
         else:
             print(f"{msg.sender}: {msg.text}")
     elif isinstance(msg, ListResponse):
+        # If the `limit_exceeded` flag is True, let the user know
+        # that there are users that satisfy wildcard.
+        if msg.limit_exceeded:
+            print(f"There are more users satisfying this query. Only showing the first {msg.max_num_users}")
         for username in msg.users:
             print(username)
     elif isinstance(msg, DeleteResponse):
@@ -100,7 +105,7 @@ def _display_message(msg):
             print(msg.error)
         else:
             print("Successfully deleted user.")
-    # This handles other error responses, but we shouldn't get any
+    # Handle other error responses
     elif isinstance(msg, Response):
         # If it's an error response, print the error
         if not msg.success:

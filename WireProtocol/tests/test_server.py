@@ -4,7 +4,7 @@ overkill to do this but we could.
 """
 
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, call
 from testfixtures import compare
 
 from src.server import *
@@ -169,10 +169,21 @@ def test_delete_active_user(app_state):
     assert not res.success
     assert res.error == "Cannot delete an active user."
 
+def test_msg_queue(app_state_data):
+    # Make message queue contain 20 max length messages
+    queued_msgs = [BroadcastMessage(sender="John", text="A"*280) for _ in range(20)]
+    # Mock socket
+    socket = MagicMock()
+    msg = QueueMessage(username="John")
+    # Patch the calls to AppState instance
+    with patch.object(AppState, 'get_queued_messages', return_value=queued_msgs):
+        with patch.object(AppState, 'get_user_connection', return_value=socket):
+            app_state = AppState(**app_state_data)
+            res = queue_service(msg, app_state)
 
-def test_msg_queue():
-    # TODO: Check edge cases with buffer size
-    assert False
+    # `socket.send` should be called 7 times
+    assert socket.send.call_count == 7
+    assert res.success
 
 
 def test_handle_register_user(app_state_data):
