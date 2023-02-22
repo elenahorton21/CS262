@@ -4,7 +4,7 @@ Python program to implement client side of chat application.
 TODO: Input should be cleared of separator token, otherwise that 
 will mess up message.
 """
-import socket
+import socketx
 import select
 import sys
 import logging
