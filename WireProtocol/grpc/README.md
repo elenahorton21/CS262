@@ -2,9 +2,9 @@
 This folder contains the grpc implementation of our chat app. There are several differences from our non-gRPC implementation, which we will explain throughout this document.
 
 # Usage
-To run this application, first start the server by running `python3 -m grpc_server`.
+To run this application, first start the server by running `python3 grpc_server.py`.
 
-Then, in another terminal window (or a different device), start the client by running `python3 -m grpc_client`
+Then, in another terminal window (or a different device), start the client by running `python3 grpc_client.py`
 
 To configure the host and port you are running on, you must edit the `config.py` file in this `grpc` folder. 
 

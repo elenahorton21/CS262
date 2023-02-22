@@ -137,7 +137,7 @@ class GRPCTest(unittest.TestCase):
 
     def test_grpc(self):
 
-        with patch('grpc.chat_pb2') as mock_server_reply:
+        with patch('chat_pb2') as mock_server_reply:
             mock_server_reply.ChatReply.message = MockChatReply(mock_server_reply.message)
             grpc_server = Chat()
 
