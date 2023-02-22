@@ -1,5 +1,12 @@
 # CS 262: Wire Protocols Assignment
 
+## Installation
+To set up your environment to run our code:
+1) Run `pip install -r requirements.txt` from this folder. 
+2) Change directory to either `src` or `grpc` depending on what version you want to run
+3) Edit the `config.py` file to add your desired IP address and port number
+4) Follow the run instructions in the READMEs of whatever folder you enter to run the application
+
 ## Structure of this project
 This project is organized into 3 main subfolders, `src`, `grpc`, and `tests`. `src` and `grpc` each contain more detailed REAMDEs of the implementation of each of our chat applications. `src` describes the chat application using our own protocol, and `grpc` describes our application using gRPC. More specifically: 
 
