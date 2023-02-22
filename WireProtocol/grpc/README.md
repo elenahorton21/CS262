@@ -73,7 +73,3 @@ Some big decisions that were made:
     - Simplify the client to just handle user input and make direct calls to the server. This simplified the logic to most of it being handled in the `handle_user_input` function. 
     - Simplify the `App` class to only include users and their messages. We added a `.logged_in` field to the `User` class as a way to explicitly track if the user is logged in or not based on calls from the client (i.e. `register` and `logout`). This is what prevents a user from logging in on multiple sessions at once. 
     - The `grpc_server.py` module now is just one function for each explicit user action all held within the `Chat` class. All of the logic for handling each use case is in there, and the only other function is the main `run` loop which instantiates the gRPC connection and starts the server. 
-
-
-# Future Work
-1) Unit tests for grpc
