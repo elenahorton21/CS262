@@ -57,8 +57,6 @@ You can run `pytest` to run all unit tests. Before doing so, please install the 
 
 Some big decisions that were made:
 
-
-
 1) How to handle client state. In the non-gRPC example, we could constantly ping the sockets and see if any clients were disconnected, thus keeping track of their log in status. However, in the gRPC implementation, we couldn't see a good way to do this (there very well may be one though). As a result, the client itself is keeping track of it's logged in state, and thus the app prevents the client from taking any action before being logged in, and it also automatically exits the application if the client is logged out to prevent hung states. This was accomplished by the following decision:
     - creating a `ServerThread` class to contantly poll the server using the `GetMessage` function. If it gets a message indicating that the client has been logged out, it returns this and the thread exits after alerting the client that they have been logged out. The thread keeps track of this by having an internal state `self.logged_in`.
     - creating a `logged_in` boolean value within the client that keeps track of whether or not the client is logged in. The client only can perform actions as usual if both the recieving `ServerThread` and the client itself have these values as `True`. Otherwise, the client is logged out and the application will gracefully exit. 
