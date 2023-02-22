@@ -90,11 +90,7 @@ class ChatMessage(Message):
         return [self.sender, recipient_str, self.text]
     
     def to_broadcast(self):
-        """
-        Return the corresponding BroadcastMessage.
-        TODO: Putting this here in case we have some formatting stuff, e.g. removing
-        certain characters.
-        """
+        """Return the corresponding BroadcastMessage."""
         return BroadcastMessage(sender=self.sender, direct=self.recipient, text=self.text)
 
         
@@ -106,7 +102,6 @@ class ListMessage(Message):
         self.wildcard = wildcard
 
     def _data_items(self):
-        """TODO: Fix when finished handling wildcard."""
         return [self.wildcard] if self.wildcard else ["*"]
 
 
@@ -122,9 +117,7 @@ class DeleteMessage(Message):
 
 
 class QueueMessage(Message):
-    """Client message for requesting queued messages.
-    TODO: Should only be able to get queued messages for yourself.
-    """
+    """Client message for requesting queued messages."""
     enc_header = "QUE"
 
     def __init__(self, username):
@@ -139,8 +132,9 @@ class QueueMessage(Message):
 ####################
 
 class BroadcastMessage(Message):
-    """Class for server's execution of ChatMessage requests.
-    TODO: Can add metadata like when the message was sent.
+    """
+    Class for server's execution of ChatMessage requests.
+    NOTE: Can add metadata like when the message was sent.
     """
     enc_header = "BRO"
 

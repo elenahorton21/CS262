@@ -3,7 +3,6 @@ from testfixtures import compare
 
 from src.protocol import *
 
-# TODO: Test edge cases where text exceeds buffer limits.
 
 @pytest.fixture
 def queued_msgs():

@@ -1,6 +1,5 @@
 """
-TODO: Not every test has completely decoupled AppState logic. Seems like 
-overkill to do this but we could.
+NOTE: Not every test has completely decoupled AppState logic. 
 """
 
 import pytest

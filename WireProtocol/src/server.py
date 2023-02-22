@@ -1,9 +1,5 @@
 """
 Implementation of server for chat application.
-
-TODO: Maybe add a graceful exit for server as well.
-TODO: Do we need to keep track of client sockets outside of AppState?
-    `client_sockets` is commented out right now.
 """
 import socket
 from threading import Thread
@@ -26,14 +22,9 @@ MAX_BUFFER_SIZE = config["MAX_BUFFER_SIZE"]
 MAX_NUM_CONNECTIONS = config["MAX_NUM_CONNECTIONS"]
 
 
-# Initialize set of all connections
-# client_sockets = set()
-
-
 def broadcast(msg, recvs):
     """
     Broadcast a message to a list of clients.
-    TODO: Handle exceptions with `conn.send`.
 
     Args:
         msg (BroadcastMessage): The message to send to clients.
@@ -104,7 +95,7 @@ def chat_service(msg, app):
         recv_conns = app.get_all_connections()
     # Otherwise, broadcast the message to sender, and recipient if active.
     else:
-        # TODO: Roundabout way of getting sender socket    
+        # Roundabout way of getting sender socket    
         recv_conns = [app.get_user_connection(msg.sender)]
         # Get recipient socket
         recipient_conn = app.get_user_connection(msg.recipient)
@@ -116,7 +107,6 @@ def chat_service(msg, app):
             app.queue_message(msg.recipient, broadcast_msg)
     
     # Broadcast the message to recipients
-    # TODO: Are there cases where this fails and we should return error response?
     broadcast(broadcast_msg, recv_conns)
 
     # Return success response
@@ -126,7 +116,17 @@ def chat_service(msg, app):
 def list_service(msg, app):
     """
     Service for handling ListMessage. Will match the wildcard as a regex
-    expression, or return all users if wildcard is None.
+    expression, or return all users if wildcard is None. If there are more
+    users that match the wildcard than the limit, only send the first `max_num_users` 
+    usernames and set the `limit_exceeded` flag to True so the client knows that the 
+    list is incomplete.
+
+    Args:
+        msg (ListMessage): The message from client.
+        app (AppState): The app state.
+
+    Returns:
+        ListResponse: The response to send to client.
     """
     users = app.list_users(wildcard=msg.wildcard)
     # Only return up to `max_num_users` users in response
@@ -168,9 +168,17 @@ def delete_service(msg, app):
 
 def queue_service(msg, app):
     """
-    Service for delivering queued messages to a user.
+    Service for delivering queued messages to a user. If there are queued messages,
+    send them as BroadcastMessages, making sure that each `cs.send()` call is passed a 
+    byte string smaller than `MAX_BUFFER_SIZE`, and then return a success response.
+    Otherwise, return an error response.
 
-    TODO: Still doesn't handle the edge case robustly.
+    Args:
+        msg (QueueMessage): The message from client containing the user to get queued messages for.
+        app (AppState): The current app state.
+    
+    Returns:
+        QueueResponse: True if there are messages in the queue, False otherwise.
     """
     queued_msgs = app.get_queued_messages(msg.username)
 
@@ -196,8 +204,12 @@ def handle_message(msg, app, socket):
         msg (str): The string to be deserialized.
         app (AppState): The app state.
         socket (Socket): The client socket that sent message.
+
     Returns:
         Response: The response to send to client.
+
+    Raises:
+        NotImplementedError: If there is no service for handling the type of the Message instance.
     """
     logging.debug(f"Handling message from {socket.getsockname()}")
 
@@ -222,12 +234,21 @@ def handle_message(msg, app, socket):
 
 
 def disconnect_client(socket, app):
-    """Handle a disconnected client."""
+    """
+    Handle a disconnected client. Remove it from active connections in 
+    app state, and close the socket.
+
+    Args:
+        socket (Socket): The client to remove.
+        app (AppState): The app state.
+
+    Returns:
+        None
+    """
+    logging.info(f"Removing {socket.getsockname()}")
     # Remove the socket from active connections in app state
     app.remove_connection(socket)
-    # Remove the socket from client sockets
-    # client_sockets.remove(socket)
-    logging.info(f"Removed {socket.getsockname()}")
+    socket.close()
 
 
 def client_thread(cs, app):
@@ -250,7 +271,6 @@ def client_thread(cs, app):
             # Listen for a message from `cs` socket
             buffer = cs.recv(MAX_BUFFER_SIZE)
         except Exception as e:
-            # TODO: What exceptions could we get here?
             logging.error(f"[!] Error: {e}")
             disconnect_client(cs, app)
         else:
@@ -270,10 +290,14 @@ def client_thread(cs, app):
 
 
 if __name__ == "__main__":
+    """
+    Sets up the server socket and listens for connections. For each client that connects,
+    create a daemon thread that handles messages from the socket. `app_state` is shared between
+    all threads.
+    """
     # Create a TCP socket
     s = socket.socket()
     # Make the port reusable
-    # TODO: Should we change this when working with multiple devices?
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     # Bind the socket
     s.bind((SERVER_HOST, SERVER_PORT))
@@ -288,18 +312,9 @@ if __name__ == "__main__":
         # Listen for new connections to accept
         client_socket, client_address = s.accept()
         logging.info(f"{client_address} has connected.")
-        # Add the new client to connected sockets
-        # client_sockets.add(client_socket)
         # Create a thread for each client
         t = Thread(target=client_thread, args=(client_socket, app_state))
         # Make the thread a daemon so it ends when the main thread does
         t.daemon = True
         # Start the thread
         t.start()
-
-
-    # close client sockets
-    for cs in client_sockets:
-        cs.close()
-    # close server socket
-    s.close()

@@ -65,7 +65,6 @@ class AppState:
     def list_users(self, wildcard=None):
         """
         Return a list of all registered usernames.
-        TODO: Define behavior. Right now just mimics re.match logic.
         """
         if not wildcard:
             return list(self._users)
@@ -179,5 +178,3 @@ class AppState:
         # If no messages, return empty list
         return self._msg_queue.get(username, [])
 
-# class SafeAppState extends AppState with lock functionality
-# https://www.bogotobogo.com/python/Multithread/python_multithreading_Synchronization_Lock_Objects_Acquire_Release.php
