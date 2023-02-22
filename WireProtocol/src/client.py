@@ -152,7 +152,7 @@ def _message_from_input(input, username):
         elif input.startswith("/delete"):
             return DeleteMessage(username=input.split(" ")[1])
         elif input.startswith("/queue"):
-            return QueueMessage(username=input.split(" ")[1])
+            return QueueMessage(username=username)
         # User requesting to send a direct message to a specified recipient
         elif input.startswith(">>"):
             fields = input.split(":")
@@ -226,10 +226,10 @@ def run(ip_address, port):
                     # print a message explaining how to use.
                     try:
                         msg = _message_from_input(input, username)
+                        server.send(msg.encode_())
                     except ValueError as _:
                         print("Improper usage.")
                         _display_usage_instructions()
-                    server.send(msg.encode_())
 
 
 if __name__ == "__main__":
