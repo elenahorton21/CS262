@@ -2,9 +2,9 @@
 This folder contains the socket implementation of our chat app.
 
 # Usage
-To run this application, first start the server by running `python3 -m server.py`.
+To run this application, first start the server by running `python3 -m src.server` from the `WireProtocol` directory.
 
-Then, in another terminal window, start the client by running `python3 -m client.py`
+Then, in another terminal window, start the client by running `python3 -m src.client` from the `WireProtocol` directory.
 
 To configure the host and port you are running on, you must edit the `config.py` file in this `src` folder. 
 
@@ -31,7 +31,6 @@ Users must enter `/delete [account]` to delete an account. They can delete any a
 
 To successfully exit the chat, users must log out by entering `/logout`. This will gracefully exit the chat and preserve the username so you can log back in later. 
 
-
 #### Getting messages
 
 To receive messages that were sent directly to you (i.e. via `>>[your_username]: [message]`) while you were not logged in, you can enter `/queue`.
@@ -39,30 +38,26 @@ To receive messages that were sent directly to you (i.e. via `>>[your_username]:
 # Structure
 
 This code has three main components, along with supplemental files:
-1) `grpc_client.py`: This is the client module. It contains the gRPC stubs to invoke remote calls on the `grpc_server.py` module. All of the logic for running and handling user input is contained in this module.
-2) `grpc_server.py`: This is the server module. It contains all of functions that can be remotely called by the client. To handle the overall state and memory of the application, it passes calls to `app.py`.
-3) `app.py`: This is the app state class that our chat application uses to keep track of users and messages. The `grpc_server.py` instantiates an `App` object and, through calls from its clients, manipulates the object throughout its lifetime to keep track of new users, removed users, and messages associated with all users. 
-4) Supplemental files include `chat.proto`, our prototype definition file, `build_proto_file.sh`, a simple script to auto-generatre the associated grpc files `chat_pb2.py`, `chat_pb2_grpc.py`, and `chat_pb2.pyi`. `config.py` contains the pre-defined settings for maximum connections, max buffer length, hostname, port, and server IP address.
+
+1) `protocol.py`: This module defines how messages between the client and server should be encoded and decoded. It defines a base `Message` class that is inherited by service-specific subclasses, e.g. `RegisterMessage`. The subclasses enforce that messages for a specific service have the required data fields. It also contains helper functions `decode_server_buffer` and `decode_client_buffer` that take a byte string as input and return a list of Message instances.
+2) `client.py`: This is the client module. It contains the code for establishing and listening to the server socket, and sending and reading messages. It uses the classes and functions defined in `protocol.py` to encode user input and decode the byte strings received from the socket. 
+3) `server.py`: This is the server module. It contains the code for initializing the server socket and creating a thread for handling each accepted client connection. It also contains a function for each service that takes a corresponding message and returns an appropriate response. To handle the overall state and memory of the application, it passes calls to `app.py`.
+4) `app.py`: This is the app state class that our chat application uses to keep track of users and messages. Running `server.py` instantiates an `AppState` object and, through calls from its clients, manipulates the object throughout its lifetime to keep track of new users, removed users, and messages associated with all users. 
+5) `config.py` contains the pre-defined settings for maximum connections, max buffer length, hostname, port, and server IP address.
 
 # Testing
-You can run `pytest -v grpc_unit_test.py` to view the output of the unit tests on different aspects of the solution. 
+You can run `pytest` to run all unit tests. Before doing so, please install the dependencies with `pip install -r requirements.txt`.
 
 # Limitations
 
-1) The primary limitation of this code is that users must logout to be able to log back in again later. This could be solved in the future with some way for the grpc server to be alerted if a client is no longer requesting messages (calling the `get_messages` function on the server). 
-2) Another limitation is that only messages shorter than the defined `MAX_BUFFER_LENGTH` can be sent in our application. This is consistent with the specs clarified in Ed postings. 
-
-# Differences from non-gRPC Implementation
-
-1) The primary difference is that the grpc implementation is handing states on the client side rather than the server side. Since there was no clear way to keep track of client connections, the client has a thread, in our case, the `ServerThread` class, that constantly polls the server for new messages. As a result, the client has to keep track of whether or not it is logged in and communicate that to the server, which also creates our greatest limitation of not being able to successfully logout if the client does not explicitly do so. 
-
-2) Due to the simplified design of gRPC, this also means that the structure of our modules look different between the non-GRPC and GRPC implementations. Because the client can just call remotely to the server, we structure our gRPC server to simply execute these calls, making function calls directly to the `App` object that holds our application's state. In the non-gRPC implementation, several function calls are used to properly create the message protocol and safely access the application resources by passing the client connection details between modules. However, in the gRPC case, the application is tracking client connecetions for us, so none of that code is necessary. Consequently, our gRPC app has a simpler design. 
-
-3) Performance and buffer sizes--> in our application, there is not an obvious difference other than slower delivery of messages to the client in the gRPC case because of the client's `ServerThread` polling for new messages. This is a design choice, and less reflective of the actual latency of gRPC vs. sockets. For a chat application with limited large data transfer, the use of pure sockets still appears faster --> communication is instantaneous without the need for app layer translations in gRPC. However, if this application were to grow to handling larger data streams, gRPC would be a much more efficient way of packaging this information. 
+1) Our implementation does not address potential race conditions arising from multiple client threads manipulating the same data in the `AppState` instance. However, our implementation is written so that `server.py` does not access or modify any data in `AppState` directly, so this could be relatively easily implemented by adding locks to the appropriate getter and setter functions in `app.py`.
+2) Another limitation is that we do not handle cases where the user input contains our separator or end-of-message tokens. In these cases, the decoding may not work properly.
 
 # Engineering Notebook
 
 Some big decisions that were made:
+
+
 
 1) How to handle client state. In the non-gRPC example, we could constantly ping the sockets and see if any clients were disconnected, thus keeping track of their log in status. However, in the gRPC implementation, we couldn't see a good way to do this (there very well may be one though). As a result, the client itself is keeping track of it's logged in state, and thus the app prevents the client from taking any action before being logged in, and it also automatically exits the application if the client is logged out to prevent hung states. This was accomplished by the following decision:
     - creating a `ServerThread` class to contantly poll the server using the `GetMessage` function. If it gets a message indicating that the client has been logged out, it returns this and the thread exits after alerting the client that they have been logged out. The thread keeps track of this by having an internal state `self.logged_in`.
