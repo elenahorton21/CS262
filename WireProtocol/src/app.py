@@ -81,13 +81,15 @@ class AppState:
                 an existing username.
         
         Raises:
-            ValueError: If the username contains non-alphanumeric characters.
+            ValueError: If the username contains non-alphanumeric characters or is greater than max length.
             InvalidUserError: If the username is being used by an active user.
         """
         if username in self._connections.keys():
             raise InvalidUserError("Username is already in use.")
         elif not username.isalnum():
             raise ValueError("Username must contain only alphanumeric characters only.")
+        elif len(username) > 12:
+            raise ValueError("Username can be at most 12 characters.")
         
         # Check if the user is a previously registered username
         if username in self._users:

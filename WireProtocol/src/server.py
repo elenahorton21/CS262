@@ -129,7 +129,13 @@ def list_service(msg, app):
     expression, or return all users if wildcard is None.
     """
     users = app.list_users(wildcard=msg.wildcard)
-    res = ListResponse(success=True, users=users)
+    # Only return up to `max_num_users` users in response
+    # Flag lets the client know that there are more users
+    if len(users) > ListResponse.max_num_users:
+        users = users[:ListResponse.max_num_users]
+        res = ListResponse(success=True, users=users, limit_exceeded=True)
+    else:
+        res = ListResponse(success=True, users=users)
     return res
 
 

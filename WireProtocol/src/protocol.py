@@ -1,10 +1,8 @@
 """
 Defines message schema. Each message has the format "[enc_header][sep_token]data...[sep_token][EOM]",
-where data is a sequence of strings joined by `sep_token` of variable length 
-dependent on the message type.
+where data is a variable length (dependent on message type) sequence of strings joined by `sep_token`.
 
 NOTE: We can modify these classes to encode header-body messages to handle potential buffer issues.
-TODO: pytest is throwing errors when I import config.
 """
 import logging
 
@@ -80,7 +78,7 @@ class ChatMessage(Message):
     def __init__(self, sender, text, recipient=None):
         # Check that `text` is less than character limit
         if len(text) > self.text_char_lim:
-            raise ValueError("Messages have a limit of 280 characters.")
+            raise ValueError(f"Messages have a limit of {self.text_char_lim} characters.")
         
         self.sender = sender
         self.text = text
@@ -218,11 +216,14 @@ class ChatResponse(Response):
 class ListResponse(Response):
     """
     Response format for ListMessage. Extends Response class to 
-    include sending the list of users.
+    include sending the list of users. The `limit_exceeded` flag lets the 
+    client know that there are more users satisfying the wildcard that the response
+    contains.
     """
     enc_header = "RESL"
+    max_num_users = 30 # The maximum number of users that will be sent in list response.
 
-    def __init__(self, success, users, error=None):
+    def __init__(self, success, users, error=None, limit_exceeded=False):
         """
         Initialize ListResponse instance.
 
@@ -230,16 +231,19 @@ class ListResponse(Response):
             success (bool): True if the message was handled successfully.
             error (str, Optional): Error message.
             users ([str]): List of usernames.
+            limit_exceeded (bool): True if there are more users satisfying wildcard than the message limit.
 
         Returns:
             ListResponse
         """
         super().__init__(success, error)
         self.users = users
+        self.limit_exceeded = limit_exceeded
     
     def _data_items(self):
-        # In addition to success and error fields, we add users as a list of strings
-        return super()._data_items() + self.users
+        # In addition to success and error fields, we add users as a list of strings, and a flag
+        # for if there are more users satisfying wildcard than can be listed.
+        return super()._data_items() + [str(int(self.limit_exceeded))] + self.users
     
 
 class DeleteResponse(Response):
@@ -338,8 +342,8 @@ def deserialize_server_message(msg):
     elif content[0] == DeleteResponse.enc_header:
         return DeleteResponse(success=bool(int(content[1])), error=content[2])
     elif content[0] == ListResponse.enc_header:
-        users = content[3:] if len(content) > 2 else None
-        return ListResponse(success=bool(int(content[1])), error=content[2], users=users)
+        users = content[4:] if len(content) > 3 else None
+        return ListResponse(success=bool(int(content[1])), error=content[2], limit_exceeded=bool(int(content[3])), users=users)
     elif content[0] == BroadcastMessage.enc_header:
         direct = content[2] if content[2] != "" else None
         return BroadcastMessage(sender=content[1], direct=direct, text=content[3])

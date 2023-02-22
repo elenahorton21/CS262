@@ -15,6 +15,12 @@ def queued_msgs():
     return [msg1, msg2, msg3]
 
 
+@pytest.fixture
+def max_length_broadcast():
+    """A BroadcastMessage with max length text."""
+    return BroadcastMessage(sender="John", text="A"*280)
+
+
 def test_encode_register_msg():
     msg = RegisterMessage(username="John")
     expected = "REG<SEP>John<EOM>"
@@ -32,6 +38,13 @@ def test_encode_chat_msg_all():
     msg = ChatMessage(sender="John", recipient=None, text="Hello all!")
     expected = "MSG<SEP>John<SEP>^<SEP>Hello all!<EOM>"
     assert msg.encode_() == expected.encode()
+
+
+def test_encode_chat_msg_big():
+    # If the chat message is too big, should raise error
+    with pytest.raises(ValueError) as excinfo:
+        _ = ChatMessage(sender="John", recipient="Bob", text="A"*281)
+    assert str(excinfo.value) == "Messages have a limit of 280 characters."
 
 
 def test_decode_chat_msg_all():
@@ -114,10 +127,17 @@ def test_decode_register_response():
 
 
 def test_encode_list_response():
-    users = [f"User{n}" for n in range(100)]
+    users = ["A"*12 for _ in range(30)] # Test max length
     res = ListResponse(success=True, users=users)
-    expected = "RESL<SEP>1<SEP><SEP>" + "<SEP>".join(users) + "<EOM>"
+    expected = "RESL<SEP>1<SEP><SEP>0<SEP>" + "<SEP>".join(users) + "<EOM>"
     assert res.encode_() == expected.encode()
+
+
+def test_decode_list_response_empty():
+    serialized = "RESL<SEP>1<SEP><SEP>0"
+    res = deserialize_server_message(serialized)
+    expected = ListResponse(success=True, users=[])
+    compare(res, expected)
 
 
 def test_decode_server_buffer(queued_msgs):
@@ -133,9 +153,24 @@ def test_decode_server_buffer(queued_msgs):
     compare(msgs[2], queued_msgs[2])
 
 
-# TODO: Finish
-def test_encode_msg_queue(queued_msgs):
+def test_encode_msg_queue(max_length_broadcast):
+    queued_msgs = [max_length_broadcast for _ in range(20)] # 10 max length messages
     res = encode_msg_queue(queued_msgs)
-    print(res)
-    print(len(res[0]))
-    assert False
+    
+    # This should return 7 items
+    assert len(res) == 7
+    # Check that each item is less than MAX_BUFFER_SIZE
+    assert all([len(buffer) <= MAX_BUFFER_SIZE for buffer in res])
+
+
+def test_decode_msg_queue(max_length_broadcast):
+    queued_msgs = [max_length_broadcast for _ in range(20)] # 10 max length messages
+    res = encode_msg_queue(queued_msgs)
+
+    msgs = []
+    for buffer in res:
+        msgs += decode_server_buffer(buffer)
+
+    assert len(msgs) == 20
+    for msg in msgs:
+        compare(max_length_broadcast, msg)

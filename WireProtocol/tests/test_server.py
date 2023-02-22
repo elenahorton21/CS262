@@ -137,7 +137,6 @@ def test_chat_inactive_user(mock_broadcast, app_state_data):
 
 
 def test_list_users(app_state):
-    # TODO: Test after implementing wildcard.
     msg = ListMessage(wildcard=".*o")
     res = list_service(msg, app_state)
 
