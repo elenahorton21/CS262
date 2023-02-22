@@ -4,6 +4,8 @@ active connections, and queued messages for inactive users.
 
 TODO: Implement locking for race conditions in SafeAppState class.
 """
+import re
+
 
 class InvalidUserError(Exception):
     """Raised in cases where the username is invalid, i.e. not registered."""
@@ -63,9 +65,11 @@ class AppState:
     def list_users(self, wildcard=None):
         """
         Return a list of all registered usernames.
-        TODO: Handle wildcards.
         """
-        return list(self._users)
+        if not wildcard:
+            return list(self._users)
+        
+        return [user for user in self._users if re.match(wildcard, user)]
   
     def register_user(self, username):
         """
@@ -76,13 +80,15 @@ class AppState:
                 an existing username.
         
         Raises:
-            ValueError: If the username contains non-alphanumeric characters.
+            ValueError: If the username contains non-alphanumeric characters or is greater than max length.
             InvalidUserError: If the username is being used by an active user.
         """
         if username in self._connections.keys():
             raise InvalidUserError("Username is already in use.")
         elif not username.isalnum():
             raise ValueError("Username must contain only alphanumeric characters only.")
+        elif len(username) > 12:
+            raise ValueError("Username can be at most 12 characters.")
         
         # Check if the user is a previously registered username
         if username in self._users:
@@ -153,6 +159,22 @@ class AppState:
         else:
             self._msg_queue[username] = [msg]
 
+    def get_queued_messages(self, username):
+        """
+        Return the queued messages for the user.
+        
+        Args:
+            username (str): The user's username.
+        
+        Returns:
+            List[BroadcastMessage]: The messages in the user's message queue.
+        
+        Raises:
+            InvalidUserError: If the user is not registered.
+        """
+        if not self.is_valid_user(username):
+            raise InvalidUserError()
+        
+        # If no messages, return empty list
+        return self._msg_queue.get(username, [])
 
-# class SafeAppState extends AppState with lock functionality
-# https://www.bogotobogo.com/python/Multithread/python_multithreading_Synchronization_Lock_Objects_Acquire_Release.php

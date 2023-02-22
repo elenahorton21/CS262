@@ -1,22 +1,20 @@
 """
 Defines message schema. Each message has the format "[enc_header][sep_token]data...[sep_token][EOM]",
-where data is a sequence of strings joined by `sep_token` of variable length 
-dependent on the message type.
+where data is a variable length (dependent on message type) sequence of strings joined by `sep_token`.
 
 NOTE: We can modify these classes to encode header-body messages to handle potential buffer issues.
-TODO: pytest is throwing errors when I import config.
 """
-# from config import config
 import logging
 
-
-# MAX_BUFFER_SIZE = config["MAX_BUFFER_SIZE"]
-MAX_BUFFER_SIZE = 1024
+from src.config import config
 
 
 # Logging
 logging.basicConfig(level=logging.DEBUG,
                     format='(%(threadName)-9s) %(message)s',)
+
+
+MAX_BUFFER_SIZE = config["MAX_BUFFER_SIZE"]
 
 
 class Message:
@@ -71,7 +69,7 @@ class RegisterMessage(Message):
 
 class ChatMessage(Message):
     """
-    Message from client to server requesting message sent.
+    Client message for sending a chat.
     """
     enc_header = "MSG"
     text_char_lim = 280 # Maximum number of characters for each message
@@ -80,7 +78,7 @@ class ChatMessage(Message):
     def __init__(self, sender, text, recipient=None):
         # Check that `text` is less than character limit
         if len(text) > self.text_char_lim:
-            raise ValueError("Messages have a limit of 280 characters.")
+            raise ValueError(f"Messages have a limit of {self.text_char_lim} characters.")
         
         self.sender = sender
         self.text = text
@@ -92,28 +90,35 @@ class ChatMessage(Message):
         return [self.sender, recipient_str, self.text]
     
     def to_broadcast(self):
-        """
-        Return the corresponding BroadcastMessage.
-        TODO: Putting this here in case we have some formatting stuff, e.g. removing
-        certain characters.
-        """
-        direct = (self.recipient != None)
-        return BroadcastMessage(sender=self.sender, direct=direct, text=self.text)
+        """Return the corresponding BroadcastMessage."""
+        return BroadcastMessage(sender=self.sender, direct=self.recipient, text=self.text)
 
         
 class ListMessage(Message):
+    """Client message for listing users."""
     enc_header = "LST"
 
     def __init__(self, wildcard=None):
         self.wildcard = wildcard
 
     def _data_items(self):
-        """TODO: Fix when finished handling wildcard."""
         return [self.wildcard] if self.wildcard else ["*"]
 
 
 class DeleteMessage(Message):
+    """Client message for deleting a user."""
     enc_header = "DEL"
+
+    def __init__(self, username):
+        self.username = username
+
+    def _data_items(self):
+        return [self.username]
+
+
+class QueueMessage(Message):
+    """Client message for requesting queued messages."""
+    enc_header = "QUE"
 
     def __init__(self, username):
         self.username = username
@@ -125,6 +130,32 @@ class DeleteMessage(Message):
 ####################
 ### Server Messages
 ####################
+
+class BroadcastMessage(Message):
+    """
+    Class for server's execution of ChatMessage requests.
+    NOTE: Can add metadata like when the message was sent.
+    """
+    enc_header = "BRO"
+
+    def __init__(self, sender, text, direct=None):
+        """
+        Initialize BroadcastMessage.
+
+        Args:
+            sender (str): The username of the sender.
+            text (str): The text of the chat message.
+            direct (str): The username of the recipient if direct message, else None.
+        """
+        self.sender = sender
+        self.text = text
+        self.direct = direct
+
+    def _data_items(self):
+        # If `direct` is None, represent with empty string
+        direct_str = self.direct if self.direct else "" 
+        return [self.sender, direct_str, self.text]
+    
 
 class Response(Message):
     """
@@ -168,7 +199,7 @@ class RegisterResponse(Response):
         # If `is_new_user` is None, it is an error response. Include an empty
         # string in place of this field.
         new_user_str = str(int(self.is_new_user)) if self.is_new_user != None else ""
-        return super()._data_items() + [str(int(self.is_new_user))]
+        return super()._data_items() + [new_user_str]
     
     
 class ChatResponse(Response):
@@ -179,11 +210,14 @@ class ChatResponse(Response):
 class ListResponse(Response):
     """
     Response format for ListMessage. Extends Response class to 
-    include sending the list of users.
+    include sending the list of users. The `limit_exceeded` flag lets the 
+    client know that there are more users satisfying the wildcard that the response
+    contains.
     """
     enc_header = "RESL"
+    max_num_users = 30 # The maximum number of users that will be sent in list response.
 
-    def __init__(self, success, users, error=None):
+    def __init__(self, success, users, error=None, limit_exceeded=False):
         """
         Initialize ListResponse instance.
 
@@ -191,16 +225,19 @@ class ListResponse(Response):
             success (bool): True if the message was handled successfully.
             error (str, Optional): Error message.
             users ([str]): List of usernames.
+            limit_exceeded (bool): True if there are more users satisfying wildcard than the message limit.
 
         Returns:
             ListResponse
         """
         super().__init__(success, error)
         self.users = users
+        self.limit_exceeded = limit_exceeded
     
     def _data_items(self):
-        # In addition to success and error fields, we add users as a list of strings
-        return super()._data_items() + self.users
+        # In addition to success and error fields, we add users as a list of strings, and a flag
+        # for if there are more users satisfying wildcard than can be listed.
+        return super()._data_items() + [str(int(self.limit_exceeded))] + self.users
     
 
 class DeleteResponse(Response):
@@ -208,28 +245,50 @@ class DeleteResponse(Response):
     enc_header = "RESD"
 
 
-class BroadcastMessage(Message):
-    """Class for server's execution of ChatMessage requests.
-    TODO: Can add metadata like when the message was sent.
+class QueueResponse(Response):
+    """Response for requesting queued messages. The actual messages
+    are sent separately."""
+    enc_header = "RESQ"
+
+
+def encode_msg_queue(msgs):
     """
-    enc_header = "BRO"
+    Function that takes a list of BroadcastMessage instances and returns
+    a list of byte strings, where each string is at most MAX_BUFFER_SIZE.
 
-    def __init__(self, sender, text, direct=False):
-        self.sender = sender
-        self.text = text
-        self.direct = direct
+    Args:
+        msgs (List[BroadcastMessage]): The queued messages.
 
-    def _data_items(self):
-        # Cast self.direct to string representation
-        direct_str = str(int(self.direct)) 
-        return [self.sender, direct_str, self.text]
-    
+    Returns:
+        List[byte str]
+    """
+    # List of byte strings 
+    out = []
+
+    data = b""
+    for msg in msgs:
+        # Add the encoded byte string to 
+        encoded = msg.encode_()
+        # Check that adding message doesn't exceed MAX_BUFFER_SIZE
+        if len(encoded) + len(data) < MAX_BUFFER_SIZE:
+            data += encoded
+        # Otherwise append `data` and start a new byte string
+        else:
+            out.append(data)
+            data = encoded
+
+    # Append remaining data
+    if data:
+        out.append(data)
+        
+    return out
+
 
 ####################
 ### Decoding
 ####################
 
-def _deserialize_client_message(msg):
+def deserialize_client_message(msg):
     """
     Factory method for deserializing a message string to appropriate Message subclass.
     
@@ -247,15 +306,17 @@ def _deserialize_client_message(msg):
         recipient = None if content[2] == "^" else content[2]
         return ChatMessage(sender=content[1], recipient=recipient, text=content[3])
     elif content[0] == ListMessage.enc_header:
-        wildcard = content[1] if len(content) > 1 else None
+        wildcard = content[1] if content[1] != "*" else None
         return ListMessage(wildcard=wildcard)
     elif content[0] == DeleteMessage.enc_header:
         return DeleteMessage(username=content[1])
+    elif content[0] == QueueMessage.enc_header:
+        return QueueMessage(username=content[1])
     else:
       raise ValueError("Unknown message type header received from client.")
 
 
-def _deserialize_server_message(msg):
+def deserialize_server_message(msg):
     """
     Factory method for deserializing a message string to appropriate Message subclass.
     
@@ -268,16 +329,20 @@ def _deserialize_server_message(msg):
     content = msg.split(Message.separator_token)
 
     if content[0] == RegisterResponse.enc_header:
-        return RegisterResponse(success=bool(int(content[1])), error=content[2], is_new_user=content[3])
+        is_new_user = content[3] if content[3] else None
+        return RegisterResponse(success=bool(int(content[1])), error=content[2], is_new_user=is_new_user)
     elif content[0] == ChatResponse.enc_header:
         return ChatResponse(success=bool(int(content[1])), error=content[2])
     elif content[0] == DeleteResponse.enc_header:
         return DeleteResponse(success=bool(int(content[1])), error=content[2])
     elif content[0] == ListResponse.enc_header:
-        users = content[3:] if len(content) > 2 else None
-        return ListResponse(success=bool(int(content[1])), error=content[2], users=users)
+        users = content[4:] if len(content) > 3 else None
+        return ListResponse(success=bool(int(content[1])), error=content[2], limit_exceeded=bool(int(content[3])), users=users)
     elif content[0] == BroadcastMessage.enc_header:
-        return BroadcastMessage(sender=content[1], direct=bool(int(content[2])), text=content[3])
+        direct = content[2] if content[2] != "" else None
+        return BroadcastMessage(sender=content[1], direct=direct, text=content[3])
+    elif content[0] == QueueResponse.enc_header:
+        return QueueResponse(success=bool(int(content[1])), error=content[2])
     else:
         raise ValueError("Unknown message type header received from server.")
     
@@ -325,11 +390,11 @@ def _decode_buffer(deserialize_fn):
 
 
 # Function for decoding a buffer on the client side
-decode_client_buffer = _decode_buffer(_deserialize_client_message)
+decode_client_buffer = _decode_buffer(deserialize_client_message)
 
 
 # Function for decoding a buffer on the server side
-decode_server_buffer = _decode_buffer(_deserialize_server_message)
+decode_server_buffer = _decode_buffer(deserialize_server_message)
 
 
 
