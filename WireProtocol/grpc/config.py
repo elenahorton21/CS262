@@ -7,5 +7,5 @@ config = {
     "MAX_NUM_CONNECTIONS": 10,
     "SERVER_HOST": "0.0.0.0", # Address the server binds to
     "SERVER_PORT": 5002,
-    "SERVER_ADDRESS": "192.168.1.220" # The IP address of the server
+    "SERVER_ADDRESS": "localhost" # The IP address of the server
 }
