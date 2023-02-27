@@ -19,6 +19,7 @@ coverage.xml
 cover/
 
 .DS_Store
+grpc/
 
 
 # Virtual env
