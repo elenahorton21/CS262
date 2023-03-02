@@ -3,7 +3,7 @@ import queue
 import random
 
 # General idea, this program can create as many processes as we need 
-# through the multiprocessing library running worker threads that define the main function
+# through the threading library run threads that are acting as individual processes
 
 # the queue is shared by all the processes, includes messages for each thread
 
