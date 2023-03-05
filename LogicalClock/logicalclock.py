@@ -1,5 +1,4 @@
-import threading
-import queue
+from multiprocessing import Process, Queue
 import random
 import time
 
@@ -7,21 +6,24 @@ import time
 
 # the queue is shared by all the processes, includes messages for each thread
 
-class myThread (threading.Thread):
-    def __init__(self, id, queues, my_queue):
-      threading.Thread.__init__(self)
-      self.id = id
-      self.queues = queues
-      self.my_queue = queues[my_queue]
-      self.clock = random.randint(1, 6)
-      print("Process " + str(self.id) + " has a clock time of " + str(self.clock))
+class VirtualMachine():
+    def __init__(self, id, queues):
+        """
+        id (int): The id of the machine (1, 2, or 3).
+        queues ()
+        """
+        self.id = id
+        self.queues = queues
+        self.clock_speed = 60 / random.randint(1, 6)
+        print("Process " + str(self.id) + " has a clock time of " + str(self.clock_speed))
 
     def add_to_queue(self, queueID, message):
         self.queues[queueID].put(message)
     
     def get_from_queue(self):
-        if not self.my_queue.empty():
-            return self.my_queue.get()
+        my_queue = self.queues[self.id]
+        if not my_queue.empty():
+            return my_queue.get()
         else:
             return "Nothing in queue"
 
@@ -39,39 +41,45 @@ class myThread (threading.Thread):
     # to do: create a global clock and local clock to update on each cycle
     # add message sending logic (based on random integers)
 
-        time.sleep(self.clock)
+        time.sleep(self.clock_speed)
         msg = self.get_from_queue()
         print(msg)
 
 
-def run():
-    first_q = queue.Queue()
-    second_q = queue.Queue()
-    third_q = queue.Queue()
+def run_machine(vm):
+    vm.run()
+
+
+if __name__ == '__main__':
+    first_q = Queue()
+    second_q = Queue()
+    third_q = Queue()
     queues = [first_q, second_q, third_q]
 
 
     # Create three "model clock" processes, note their ID in the queues list
-    p1 = myThread(1, queues, 0)
-    p2 = myThread(2, queues, 1)
-    p3 = myThread(3, queues, 2)
+    vm1 = VirtualMachine(0, queues)
+    vm2 = VirtualMachine(1, queues)
+    vm3 = VirtualMachine(2, queues)
+
+    p1 = Process(target=run_machine, args=(vm1, ))
+    p2 = Process(target=run_machine, args=(vm2, ))
+    p3 = Process(target=run_machine, args=(vm3, ))
 
     p1.start()
+    p1.join()
     p2.start()
+    p2.join()
     p3.start()
-
-
+    p3.join()
+    
     # testing functionality of the queues across processes --> working!
-    p1.add_to_queue(2, "hi!")
-    p2.add_to_queue(1, "what's up? ")
-    p3.add_to_queue(0, "hello from p3!")
+    vm1.add_to_queue(2, "hi!")
+    vm2.add_to_queue(1, "what's up? ")
+    vm3.add_to_queue(0, "hello from p3!")
 
     # for i in range(0, len(queues)):
     #     q = queues[i]
     #     if not q.empty():
     #         msg = q.get()
     #         print(str(i) + ": " + msg)
-
-
-if __name__ == '__main__':
-    run()
