@@ -6,12 +6,13 @@ import time
 
 # the queue is shared by all the processes, includes messages for each thread
 
-class VirtualMachine():
-    def __init__(self, id, queues):
+class VirtualMachine(Process):
+    def __init__(self, id, queues, **kwargs):
         """
         id (int): The id of the machine (1, 2, or 3).
         queues ()
         """
+        super().__init__(**kwargs)
         self.id = id
         self.queues = queues
         self.clock_speed = 60 / random.randint(1, 6)
@@ -46,10 +47,6 @@ class VirtualMachine():
         print(msg)
 
 
-def run_machine(vm):
-    vm.run()
-
-
 if __name__ == '__main__':
     first_q = Queue()
     second_q = Queue()
@@ -58,13 +55,9 @@ if __name__ == '__main__':
 
 
     # Create three "model clock" processes, note their ID in the queues list
-    vm1 = VirtualMachine(0, queues)
-    vm2 = VirtualMachine(1, queues)
-    vm3 = VirtualMachine(2, queues)
-
-    p1 = Process(target=run_machine, args=(vm1, ))
-    p2 = Process(target=run_machine, args=(vm2, ))
-    p3 = Process(target=run_machine, args=(vm3, ))
+    p1 = VirtualMachine(0, queues)
+    p2 = VirtualMachine(1, queues)
+    p3 = VirtualMachine(2, queues)
 
     p1.start()
     p1.join()
@@ -74,9 +67,9 @@ if __name__ == '__main__':
     p3.join()
     
     # testing functionality of the queues across processes --> working!
-    vm1.add_to_queue(2, "hi!")
-    vm2.add_to_queue(1, "what's up? ")
-    vm3.add_to_queue(0, "hello from p3!")
+    p1.add_to_queue(2, "hi!")
+    p2.add_to_queue(1, "what's up? ")
+    p3.add_to_queue(0, "hello from p3!")
 
     # for i in range(0, len(queues)):
     #     q = queues[i]
