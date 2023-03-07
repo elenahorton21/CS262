@@ -1,0 +1,31 @@
+Process 2 has a clock rate of 5
+
+Internal event	 System time: 17:04:56	 Logical clock time: 1
+Internal event	 System time: 17:05:01	 Logical clock time: 2
+Received message	 System time: 17:05:06	 Logical clock time: 2
+Sent message:'2'	 System time: 17:05:11	 Logical clock time: 3
+Received message	 System time: 17:05:16	 Logical clock time: 4
+Internal event	 System time: 17:05:21	 Logical clock time: 5
+Internal event	 System time: 17:05:26	 Logical clock time: 6
+Sent message:'6'	 System time: 17:05:31	 Logical clock time: 7
+Internal event	 System time: 17:05:36	 Logical clock time: 8
+Internal event	 System time: 17:05:41	 Logical clock time: 9
+Sent message:'9'	 System time: 17:05:46	 Logical clock time: 10
+Sent message:'10'	 System time: 17:05:51	 Logical clock time: 11
+Internal event	 System time: 17:05:56	 Logical clock time: 12
+Internal event	 System time: 17:06:01	 Logical clock time: 13
+Sent message:'13'	 System time: 17:06:06	 Logical clock time: 14
+Internal event	 System time: 17:06:11	 Logical clock time: 15
+Received message	 System time: 17:06:16	 Logical clock time: 15
+Received message	 System time: 17:06:21	 Logical clock time: 15
+Received message	 System time: 17:06:26	 Logical clock time: 16
+Internal event	 System time: 17:06:31	 Logical clock time: 17
+Sent message:'17'	 System time: 17:06:36	 Logical clock time: 18
+Internal event	 System time: 17:06:41	 Logical clock time: 19
+Internal event	 System time: 17:06:46	 Logical clock time: 20
+Internal event	 System time: 17:06:51	 Logical clock time: 21
+Internal event	 System time: 17:06:56	 Logical clock time: 22
+Received message	 System time: 17:07:01	 Logical clock time: 25
+Internal event	 System time: 17:07:06	 Logical clock time: 26
+Received message	 System time: 17:07:11	 Logical clock time: 27
+Sent message:'27'	 System time: 17:07:16	 Logical clock time: 28

@@ -9,10 +9,6 @@ import time
 from datetime import datetime
 import logging
 
-# General idea, threading library creates "processes" that are each running our logical clock module
-
-# the queue is shared by all the processes, includes messages for each thread
-
 class VirtualMachine(Process):
     def __init__(self, id, queues, **kwargs):
         """
@@ -22,11 +18,12 @@ class VirtualMachine(Process):
         super().__init__(**kwargs)
         self.id = id
         self.queues = queues
-        self.clock_rate = 60 / (random.randint(1, 6)*5)
+        self.clock_rate = random.randint(1,6)
         self.lclock = 0 # Value of logical clock 
         self.lclock_increment = 1 # Logical clock increment
         self.log_file_path = f"logs/machine{id}.txt" # Logging file
-        print("Process " + str(self.id) + " has a clock rate of " + str(self.clock_rate))    
+        print("Process " + str(self.id) + " has a clock rate of " + str(self.clock_rate))   
+        self.write_to_log("Process " + str(self.id) + " has a clock rate of " + str(self.clock_rate) + '\n\n') 
 
         # TODO: Using this to specify which machine to send a message for 1 and 2, respectively.
         self.other_ids = [0, 1, 2]
@@ -36,6 +33,8 @@ class VirtualMachine(Process):
     def empty_queue(self):
         """Returns True if the machine's message queue is empty."""
         return self.queues[self.id].empty()
+
+    
     
     @property
     def system_time(self):
@@ -51,6 +50,7 @@ class VirtualMachine(Process):
         """Get the first message in the queue."""
         my_queue = self.queues[self.id]
         return my_queue.get()
+
 
     def update_lclock(self, recv_clock=None):
         """
@@ -113,8 +113,8 @@ class VirtualMachine(Process):
         else:
             msg = self.pop_message()
             self.update_lclock(int(msg))
-            # TODO: Confirm that "global time" from instructions is the same as system time
-            self.write_to_log(f"Received message\t System time: {self.system_time}\t Logical clock time: {self.lclock}\n")
+            self.write_to_log(f"Received message\t System time: {self.system_time}\t Logical clock time: {self.lclock}\n")     
+
 
     def run(self):
         """
@@ -124,11 +124,8 @@ class VirtualMachine(Process):
         execution time for `self.step()`. This probably isn't necessary.
         """
 
-        print("Starting " + str(self.id))
-
-        while True:
-            self.step()
-            time.sleep(self.clock_rate)
+        self.step()
+        time.sleep(self.clock_rate)
 
 
 def clear_logs():
@@ -136,9 +133,8 @@ def clear_logs():
     for i in range(3):
         open(f'logs/machine{i}.txt', 'w').close()
 
-
-if __name__ == '__main__':
-    # Clear logs before running
+def main():
+     # Clear logs before running
     clear_logs()
 
     # Initialize queues
@@ -152,17 +148,18 @@ if __name__ == '__main__':
     p2 = VirtualMachine(1, queues)
     p3 = VirtualMachine(2, queues)
 
+    # start all model clock processes
     p1.start()
     p2.start()
     p3.start()
 
-    # Need to use `join()` to make sure that the processes are closed properly.
+    # will run indefinitely until the user exits the program
+   
     p1.join()
     p2.join()
     p3.join()
 
-    # for i in range(0, len(queues)):
-    #     q = queues[i]
-    #     if not q.empty():
-    #         msg = q.get()
-    #         print(str(i) + ": " + msg)
+
+if __name__ == '__main__':
+    main()
+

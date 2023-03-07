@@ -1,0 +1,21 @@
+Process 0 has a clock rate of 6
+
+Sent message:'0'	 System time: 17:07:25	 Logical clock time: 1
+Received message	 System time: 17:07:31	 Logical clock time: 1
+Internal event	 System time: 17:07:37	 Logical clock time: 2
+Internal event	 System time: 17:07:43	 Logical clock time: 3
+Internal event	 System time: 17:07:49	 Logical clock time: 4
+Received message	 System time: 17:07:55	 Logical clock time: 5
+Received message	 System time: 17:08:01	 Logical clock time: 6
+Received message	 System time: 17:08:07	 Logical clock time: 6
+Received message	 System time: 17:08:13	 Logical clock time: 8
+Sent message:'8'	 System time: 17:08:19	 Logical clock time: 9
+Internal event	 System time: 17:08:25	 Logical clock time: 10
+Received message	 System time: 17:08:31	 Logical clock time: 10
+Sent message:'10'	 System time: 17:08:37	 Logical clock time: 11
+Received message	 System time: 17:08:43	 Logical clock time: 16
+Sent message:'16'	 System time: 17:08:49	 Logical clock time: 17
+Internal event	 System time: 17:08:55	 Logical clock time: 18
+Internal event	 System time: 17:09:01	 Logical clock time: 19
+Internal event	 System time: 17:09:07	 Logical clock time: 20
+Internal event	 System time: 17:09:13	 Logical clock time: 21

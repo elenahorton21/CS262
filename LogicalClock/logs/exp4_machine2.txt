@@ -1,0 +1,21 @@
+Process 2 has a clock rate of 6
+
+Internal event	 System time: 17:07:25	 Logical clock time: 1
+Received message	 System time: 17:07:31	 Logical clock time: 1
+Internal event	 System time: 17:07:37	 Logical clock time: 2
+Sent message:'2'	 System time: 17:07:43	 Logical clock time: 3
+Internal event	 System time: 17:07:49	 Logical clock time: 4
+Received message	 System time: 17:07:55	 Logical clock time: 6
+Sent message:'6'	 System time: 17:08:01	 Logical clock time: 7
+Internal event	 System time: 17:08:07	 Logical clock time: 8
+Internal event	 System time: 17:08:13	 Logical clock time: 9
+Received message	 System time: 17:08:19	 Logical clock time: 9
+Sent message:'9'	 System time: 17:08:25	 Logical clock time: 10
+Internal event	 System time: 17:08:31	 Logical clock time: 11
+Received message	 System time: 17:08:37	 Logical clock time: 11
+Received message	 System time: 17:08:43	 Logical clock time: 16
+Received message	 System time: 17:08:49	 Logical clock time: 16
+Internal event	 System time: 17:08:55	 Logical clock time: 17
+Internal event	 System time: 17:09:01	 Logical clock time: 18
+Internal event	 System time: 17:09:07	 Logical clock time: 19
+Received message	 System time: 17:09:13	 Logical clock time: 23
