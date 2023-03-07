@@ -1,0 +1,6 @@
+Internal event	 System time: 20:28:24	 Logical clock time: 1
+Sent message:'1'	 System time: 20:28:30	 Logical clock time: 2
+Internal event	 System time: 20:28:36	 Logical clock time: 3
+Internal event	 System time: 20:28:42	 Logical clock time: 4
+Received message	 System time: 20:28:48	 Logical clock time: 9
+Received message	 System time: 20:28:54	 Logical clock time: 11
