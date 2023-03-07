@@ -8,6 +8,7 @@ import random
 import time
 from datetime import datetime
 import logging
+from config import *
 
 class VirtualMachine(Process):
     def __init__(self, id, queues, **kwargs):
@@ -18,7 +19,7 @@ class VirtualMachine(Process):
         super().__init__(**kwargs)
         self.id = id
         self.queues = queues
-        self.clock_rate = random.randint(1,6)
+        self.clock_rate = random.randint(1,config["MAX_CLOCK_RANGE"])
         self.lclock = 0 # Value of logical clock 
         self.lclock_increment = 1 # Logical clock increment
         self.log_file_path = f"logs/machine{id}.txt" # Logging file
@@ -84,7 +85,7 @@ class VirtualMachine(Process):
         # If there are no message in the queue, use random number to
         # determine action.
         if self.empty_queue:
-            action = random.randint(1, 10)
+            action = random.randint(1, config["MAX_PROBABILITY"])
             if action == 1:
                 recp_id = self.other_ids[0]
                 message = str(self.lclock)
@@ -113,7 +114,7 @@ class VirtualMachine(Process):
         else:
             msg = self.pop_message()
             self.update_lclock(int(msg))
-            self.write_to_log(f"Received message\t System time: {self.system_time}\t Logical clock time: {self.lclock}\n")     
+            self.write_to_log(f"Received message\t System time: {self.system_time}\t Logical clock time: {self.lclock}\t Queue size: {self.queues[self.id].qsize()}\n")     
 
 
     def run(self):
