@@ -1,7 +1,19 @@
-Process 0 has a clock rate of 4
-
-Internal event	 System time: 13:12:53	 Logical clock time: 1
-Process 0 has a clock rate of 4
-
 Process 0 has a clock rate of 6
 
+Internal event	 System time: 13:16:26	 Logical clock time: 1
+Internal event	 System time: 13:16:36	 Logical clock time: 2
+Internal event	 System time: 13:16:46	 Logical clock time: 3
+Internal event	 System time: 13:16:56	 Logical clock time: 4
+Internal event	 System time: 13:17:06	 Logical clock time: 5
+Sent message:'5'	 System time: 13:17:16	 Logical clock time: 6
+Sent message:'6'	 System time: 13:17:26	 Logical clock time: 7
+Internal event	 System time: 13:17:36	 Logical clock time: 8
+Internal event	 System time: 13:17:46	 Logical clock time: 9
+Internal event	 System time: 13:17:56	 Logical clock time: 10
+Sent message:'10'	 System time: 13:18:06	 Logical clock time: 11
+Internal event	 System time: 13:18:16	 Logical clock time: 12
+Sent message:'12'	 System time: 13:18:26	 Logical clock time: 13
+Internal event	 System time: 13:18:36	 Logical clock time: 14
+Sent message:'14'	 System time: 13:18:46	 Logical clock time: 15
+Sent message:'15'	 System time: 13:18:56	 Logical clock time: 16
+Internal event	 System time: 13:19:06	 Logical clock time: 17
