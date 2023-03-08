@@ -1,3 +1,61 @@
 Process 0 has a clock rate of 6
 
 Sent message:'0'	 System time: 17:35:43	 Logical clock time: 1
+Process 0 has a clock rate of 3
+
+Process 0 has a clock rate of 1
+
+Process 0 has a clock rate of 6
+
+Process 0 has a clock rate of 4
+
+Process 0 has a clock rate of 2
+
+Process 0 has a clock rate of 1
+
+Sent message:'0'	 System time: 10:22:58	 Logical clock time: 1
+Process 0 has a clock rate of 4
+
+Sent message:'0'	 System time: 10:23:18	 Logical clock time: 1
+Process 0 has a clock rate of 2
+
+Sent message:'0'	 System time: 10:25:52	 Logical clock time: 1
+Process 0 has a clock rate of 6
+
+Sent message:'0'	 System time: 10:30:09	 Logical clock time: 1
+Process 0 has a clock rate of 2
+
+Sent message:'0'	 System time: 10:30:34	 Logical clock time: 1
+Process 0 has a clock rate of 1
+
+Sent message:'0'	 System time: 10:30:46	 Logical clock time: 1
+Process 0 has a clock rate of 1
+
+Sent message:'0'	 System time: 10:30:46	 Logical clock time: 1
+Process 0 has a clock rate of 2
+
+Sent message:'0'	 System time: 10:38:56	 Logical clock time: 1
+Process 0 has a clock rate of 3
+
+Sent message:'0'	 System time: 10:38:56	 Logical clock time: 1
+Process 0 has a clock rate of 5
+
+Sent message:'0'	 System time: 10:38:56	 Logical clock time: 1
+Process 0 has a clock rate of 2
+
+Sent message:'0'	 System time: 10:39:50	 Logical clock time: 1
+Process 0 has a clock rate of 6
+
+Sent message:'0'	 System time: 10:39:50	 Logical clock time: 1
+Process 0 has a clock rate of 1
+
+Sent message:'0'	 System time: 10:39:50	 Logical clock time: 1
+Process 0 has a clock rate of 1
+
+Sent message:'0'	 System time: 10:40:38	 Logical clock time: 1
+Process 0 has a clock rate of 1
+
+Sent message:'0'	 System time: 10:40:38	 Logical clock time: 1
+Process 0 has a clock rate of 5
+
+Sent message:'0'	 System time: 10:40:38	 Logical clock time: 1

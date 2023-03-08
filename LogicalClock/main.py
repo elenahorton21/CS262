@@ -7,8 +7,9 @@ from multiprocessing import Process, Queue
 import random
 import time
 from datetime import datetime
-import logging
-from config import *
+
+from .config import *
+
 
 class VirtualMachine(Process):
     def __init__(self, id, queues, **kwargs):
@@ -34,8 +35,6 @@ class VirtualMachine(Process):
     def empty_queue(self):
         """Returns True if the machine's message queue is empty."""
         return self.queues[self.id].empty()
-
-    
     
     @property
     def system_time(self):
@@ -52,7 +51,6 @@ class VirtualMachine(Process):
         my_queue = self.queues[self.id]
         return my_queue.get()
 
-
     def update_lclock(self, recv_clock=None):
         """
         Update the machine's logical clock. If a message was received, the local clock is set to the 
@@ -61,8 +59,8 @@ class VirtualMachine(Process):
         """
         if recv_clock:
             self.lclock = max(self.lclock, recv_clock)
-        else:
-            self.lclock += self.lclock_increment
+            
+        self.lclock += self.lclock_increment
 
     def write_to_log(self, message):
         """Write the message to the machine's log."""
