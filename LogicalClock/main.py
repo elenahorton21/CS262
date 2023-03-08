@@ -180,8 +180,8 @@ def main():
     p2.start()
     p3.start()
 
-    # Will run indefinitely until the user exits the program
-   
+    # Will run indefinitely until the user exits the program.`join()` ensures that the child processes are killed when the parent 
+    # process ends.
     p1.join()
     p2.join()
     p3.join()

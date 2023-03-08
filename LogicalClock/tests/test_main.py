@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import patch, call, PropertyMock
+from multiprocessing import Queue
 
 from ..main import VirtualMachine
 
@@ -15,6 +16,23 @@ def empty_vm():
         patch.object(VirtualMachine, 'write_to_log', return_value=None):
         mock_empty_queue.return_value = True
         yield VirtualMachine(0, queues)
+
+
+def test_send_message():
+    queues = [Queue(), Queue(), Queue()]
+    vm = VirtualMachine(0, queues)
+    vm.send_message(1, "Test message")
+
+    assert queues[1].get() == "Test message"
+
+
+def test_pop_message():
+    queues = [Queue(), Queue(), Queue()]
+    vm = VirtualMachine(0, queues)
+    queues[0].put("Test message")
+    msg = vm.pop_message()
+
+    assert msg == "Test message"
 
 
 def test_update_lclock_internal(empty_vm):
