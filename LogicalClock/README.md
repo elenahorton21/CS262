@@ -11,6 +11,8 @@ To set up your environment to run our code:
 
 This model clock experiment can be run simply by calling `python3 main.py` from this folder. The resulting outputs will be automatically written to the files `machine0.txt`, `machine1.txt`, and `machine2.txt`. 
 
+To exit the program, just quit throuch `CTRL + C`.
+
 # Structure
 
 The structure of our system is pretty simple:
