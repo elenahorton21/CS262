@@ -7,7 +7,12 @@ import random
 import time
 from datetime import datetime
 
-from .config import *
+
+config = {
+    "MAX_CLOCK_RANGE": 6,
+    "MAX_PROBABILITY": 4,
+    "INCLUDE_QUEUE_SIZE": False,
+}
 
 
 class VirtualMachine(Process):
@@ -142,7 +147,12 @@ class VirtualMachine(Process):
         else:
             msg = self.pop_message()
             self.update_lclock(int(msg))
-            self.write_to_log(f"Received message\t System time: {self.system_time}\t Logical clock time: {self.lclock}\n")     
+            # With `multiprocessing.Queue`, we cannot call `qsize()` on certain machines, e.g. MacOS.
+            base_log_msg = f"Received message\t System time: {self.system_time}\t Logical clock time: {self.lclock}"
+            if config["INCLUDE_QUEUE_SIZE"]:
+                queue_size = self.queues[self.id].qsize()
+                base_log_msg += f"\t Queue size: {queue_size}"
+            self.write_to_log(base_log_msg + "\n")     
 
     def run(self):
         """
