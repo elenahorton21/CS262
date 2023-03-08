@@ -125,6 +125,7 @@ def clear_logs():
     for i in range(3):
         open(f'logs/machine{i}.txt', 'w').close()
 
+
 def main():
      # Clear logs before running
     clear_logs()
