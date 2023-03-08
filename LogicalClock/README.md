@@ -15,16 +15,20 @@ This model clock experiment can be run simply by calling `python3 main.py` from 
 
 The structure of our system is pretty simple:
 - `main.py` contains the core module, which runs three virtual machines according to the assignment specifications. Each virtual machine "model clock" writes to its own log files. All log files are contained in the `logs` directory. 
-- TODO: add details on our code structure
+- The primary data structure that we use for our system is the Queue libary, which allows to multiple processes to share a single queue through locking. 
+- Our system is run through a simulated through a single main program, which creates three sub processes using the `multiprogramming` library. 
 
 # Testing
 
-TODO add testing instructions
+For details on our experiments, please see the `Engineering Notebook` section below.
+
+- TODO add testing instructions
 
 # Limitations
 
-TODO: Add details on multiprocessing and configurations
+1) Because of our decision to use multiprogramming to simulate our model clocks through subprocesses, this program cannot be run across different machines. 
+2) A limitation of the `Queue` class is that, on some Unix machines (including our own), the `.qsize()` method that returns the size of the queue is not able to be implemented. This doesn't effect the results of the experiment in any meaningful way, it jus tmeans we can't precisely view the sizes of the queues.
 
 # Engineering Notebook
 
-TODO: Add findings from experiments
+

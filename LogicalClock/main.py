@@ -22,7 +22,7 @@ class VirtualMachine(Process):
         self.clock_rate = random.randint(1,config["MAX_CLOCK_RANGE"])
         self.lclock = 0 # Value of logical clock 
         self.lclock_increment = 1 # Logical clock increment
-        self.log_file_path = f"logs/machine{id}.txt" # Logging file
+        self.log_file_path = f"logs/exp7_machine{id}.txt" # Logging file
         print("Process " + str(self.id) + " has a clock rate of " + str(self.clock_rate))   
         self.write_to_log("Process " + str(self.id) + " has a clock rate of " + str(self.clock_rate) + '\n\n') 
 
@@ -114,7 +114,7 @@ class VirtualMachine(Process):
         else:
             msg = self.pop_message()
             self.update_lclock(int(msg))
-            self.write_to_log(f"Received message\t System time: {self.system_time}\t Logical clock time: {self.lclock}\t Queue size: {self.queues[self.id].qsize()}\n")     
+            self.write_to_log(f"Received message\t System time: {self.system_time}\t Logical clock time: {self.lclock}\n")     
 
 
     def run(self):
@@ -124,15 +124,15 @@ class VirtualMachine(Process):
         TODO: We could make this actually be 60 seconds by timing the 
         execution time for `self.step()`. This probably isn't necessary.
         """
-
-        self.step()
-        time.sleep(self.clock_rate)
+        while True:
+            self.step()
+            time.sleep(self.clock_rate)
 
 
 def clear_logs():
     """Clear all the log files."""
     for i in range(3):
-        open(f'logs/machine{i}.txt', 'w').close()
+        open(f'logs/exp7_machine{i}.txt', 'w').close()
 
 def main():
      # Clear logs before running

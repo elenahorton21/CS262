@@ -1,0 +1,33 @@
+Process 1 has a clock rate of 2
+
+Internal event	 System time: 09:56:26	 Logical clock time: 1
+Internal event	 System time: 09:56:28	 Logical clock time: 2
+Received message	 System time: 09:56:30	 Logical clock time: 3
+Received message	 System time: 09:56:32	 Logical clock time: 4
+Received message	 System time: 09:56:34	 Logical clock time: 5
+Received message	 System time: 09:56:36	 Logical clock time: 6
+Received message	 System time: 09:56:38	 Logical clock time: 7
+Sent message:'7'	 System time: 09:56:40	 Logical clock time: 8
+Received message	 System time: 09:56:42	 Logical clock time: 14
+Received message	 System time: 09:56:44	 Logical clock time: 15
+Received message	 System time: 09:56:46	 Logical clock time: 16
+Received message	 System time: 09:56:48	 Logical clock time: 17
+Received message	 System time: 09:56:50	 Logical clock time: 19
+Received message	 System time: 09:56:52	 Logical clock time: 23
+Received message	 System time: 09:56:54	 Logical clock time: 26
+Sent message:'26'	 System time: 09:56:56	 Logical clock time: 27
+Received message	 System time: 09:56:58	 Logical clock time: 30
+Received message	 System time: 09:57:00	 Logical clock time: 32
+Received message	 System time: 09:57:02	 Logical clock time: 33
+Sent message:'33'	 System time: 09:57:04	 Logical clock time: 34
+Internal event	 System time: 09:57:06	 Logical clock time: 35
+Sent message:'35'	 System time: 09:57:08	 Logical clock time: 36
+Received message	 System time: 09:57:10	 Logical clock time: 40
+Sent message:'40'	 System time: 09:57:12	 Logical clock time: 41
+Sent message:'41'	 System time: 09:57:14	 Logical clock time: 42
+Received message	 System time: 09:57:16	 Logical clock time: 44
+Sent message:'44'	 System time: 09:57:18	 Logical clock time: 45
+Received message	 System time: 09:57:20	 Logical clock time: 47
+Received message	 System time: 09:57:22	 Logical clock time: 48
+Received message	 System time: 09:57:24	 Logical clock time: 50
+Received message	 System time: 09:57:26	 Logical clock time: 51
