@@ -75,10 +75,6 @@ class VirtualMachine(Process):
         (remember, the queue is not running at the same cycle speed) the virtual machine 
         should take one message off the queue, update the local logical clock, and write in the log that it received a message,
         the global time (gotten from the system), the length of the message queue, and the logical clock time.
-        
-        TODO: Refactor duplicate code.
-        TODO: Logging the right information.
-        TODO: Should we update the logical clock twice when the value is 3?
         """
         # If there are no message in the queue, use random number to
         # determine action.
@@ -112,19 +108,16 @@ class VirtualMachine(Process):
         else:
             msg = self.pop_message()
             self.update_lclock(int(msg))
-            self.write_to_log(f"Received message\t System time: {self.system_time}\t Logical clock time: {self.lclock}\t Queue size: {self.queues[self.id].qsize()}\n")     
+            self.write_to_log(f"Received message\t System time: {self.system_time}\t Logical clock time: {self.lclock}\n")     
 
 
     def run(self):
         """
         Run loop called by `Process.start()`.
-
-        TODO: We could make this actually be 60 seconds by timing the 
-        execution time for `self.step()`. This probably isn't necessary.
         """
-
-        self.step()
-        time.sleep(self.clock_rate)
+        while True:
+            self.step()
+            time.sleep(self.clock_rate)
 
 
 def clear_logs():
