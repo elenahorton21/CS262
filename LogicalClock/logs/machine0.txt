@@ -1,5 +1,4 @@
 Process 0 has a clock rate of 2
-
 Sent message:'0'	 System time: 10:44:54	 Logical clock time: 1
 Internal event	 System time: 10:44:56	 Logical clock time: 2
 Sent message:'2'	 System time: 10:44:58	 Logical clock time: 3
