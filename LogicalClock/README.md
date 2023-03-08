@@ -26,7 +26,8 @@ For details on our experiments, please see the `Engineering Notebook` section be
 
 # Limitations
 
-1) Because of our decision to use multiprogramming to simulate our model clocks through subprocesses, this program cannot be run across different machines. 
+1) Because of our decision to use multiprogramming to simulate our model clocks through subprocesses, this program cannot be run across different machines. We chose to simulate through a single machine.
+    -  More specifically, the queue module implements multi-producer, multi-consumer queues. The Queue class in this module implements all the required locking semantics, and the multiprocessing queues are sent between processes by serializing its objects through pipes. The choice simplifies programming while still accurately reflecting the results of our model clock system.
 2) A limitation of the `Queue` class is that, on some Unix machines (including our own), the `.qsize()` method that returns the size of the queue is not able to be implemented. This doesn't effect the results of the experiment in any meaningful way, it jus tmeans we can't precisely view the sizes of the queues.
 
 # Engineering Notebook
