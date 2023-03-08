@@ -17,6 +17,32 @@ def empty_vm():
         yield VirtualMachine(0, queues)
 
 
+def test_update_lclock_internal(empty_vm):
+    """Test the case where `update_lclock` is called without another clock time argument."""
+    empty_vm.update_lclock()
+    assert empty_vm.lclock == 1
+
+
+def test_update_lclock_local_large(empty_vm):
+    """
+    Test the case where `update_lclock` is called with another clock time, where
+    the local logical clock time is larger.
+    """
+    empty_vm.lclock = 5
+    empty_vm.update_lclock(recv_clock=3)
+    assert empty_vm.lclock == 6
+
+
+def test_update_lclock_local_small(empty_vm):
+    """
+    Test the case where `update_lclock` is called with another clock time, where
+    the local logical clock time is smaller.
+    """
+    empty_vm.lclock = 2
+    empty_vm.update_lclock(recv_clock=3)
+    assert empty_vm.lclock == 4
+    
+
 @patch('random.randint')
 def test_step1(mock_random, empty_vm):
     """
