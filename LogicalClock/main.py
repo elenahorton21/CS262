@@ -22,7 +22,7 @@ class VirtualMachine(Process):
         self.clock_rate = random.randint(1,config["MAX_CLOCK_RANGE"])
         self.lclock = 0 # Value of logical clock 
         self.lclock_increment = 1 # Logical clock increment
-        self.log_file_path = f"logs/exp7_machine{id}.txt" # Logging file
+        self.log_file_path = f"logs/machine{id}.txt" # Logging file
         print("Process " + str(self.id) + " has a clock rate of " + str(self.clock_rate))   
         self.write_to_log("Process " + str(self.id) + " has a clock rate of " + str(self.clock_rate) + '\n\n') 
 
@@ -60,7 +60,7 @@ class VirtualMachine(Process):
         by the standard increment (1).
         """
         if recv_clock:
-            self.lclock = max(self.lclock, recv_clock)
+            self.lclock = max(self.lclock, recv_clock) + 1
         else:
             self.lclock += self.lclock_increment
 
@@ -77,10 +77,6 @@ class VirtualMachine(Process):
         (remember, the queue is not running at the same cycle speed) the virtual machine 
         should take one message off the queue, update the local logical clock, and write in the log that it received a message,
         the global time (gotten from the system), the length of the message queue, and the logical clock time.
-        
-        TODO: Refactor duplicate code.
-        TODO: Logging the right information.
-        TODO: Should we update the logical clock twice when the value is 3?
         """
         # If there are no message in the queue, use random number to
         # determine action.
@@ -120,9 +116,6 @@ class VirtualMachine(Process):
     def run(self):
         """
         Run loop called by `Process.start()`.
-
-        TODO: We could make this actually be 60 seconds by timing the 
-        execution time for `self.step()`. This probably isn't necessary.
         """
         while True:
             self.step()
@@ -132,7 +125,7 @@ class VirtualMachine(Process):
 def clear_logs():
     """Clear all the log files."""
     for i in range(3):
-        open(f'logs/exp7_machine{i}.txt', 'w').close()
+        open(f'logs/machine{i}.txt', 'w').close()
 
 def main():
      # Clear logs before running

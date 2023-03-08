@@ -1,21 +1,27 @@
-Process 2 has a clock rate of 6
+Process 2 has a clock rate of 4
 
-Internal event	 System time: 17:07:25	 Logical clock time: 1
-Received message	 System time: 17:07:31	 Logical clock time: 1
-Internal event	 System time: 17:07:37	 Logical clock time: 2
-Sent message:'2'	 System time: 17:07:43	 Logical clock time: 3
-Internal event	 System time: 17:07:49	 Logical clock time: 4
-Received message	 System time: 17:07:55	 Logical clock time: 6
-Sent message:'6'	 System time: 17:08:01	 Logical clock time: 7
-Internal event	 System time: 17:08:07	 Logical clock time: 8
-Internal event	 System time: 17:08:13	 Logical clock time: 9
-Received message	 System time: 17:08:19	 Logical clock time: 9
-Sent message:'9'	 System time: 17:08:25	 Logical clock time: 10
-Internal event	 System time: 17:08:31	 Logical clock time: 11
-Received message	 System time: 17:08:37	 Logical clock time: 11
-Received message	 System time: 17:08:43	 Logical clock time: 16
-Received message	 System time: 17:08:49	 Logical clock time: 16
-Internal event	 System time: 17:08:55	 Logical clock time: 17
-Internal event	 System time: 17:09:01	 Logical clock time: 18
-Internal event	 System time: 17:09:07	 Logical clock time: 19
-Received message	 System time: 17:09:13	 Logical clock time: 23
+Internal event	 System time: 10:28:37	 Logical clock time: 1
+Received message	 System time: 10:28:41	 Logical clock time: 2
+Received message	 System time: 10:28:45	 Logical clock time: 3
+Received message	 System time: 10:28:49	 Logical clock time: 9
+Received message	 System time: 10:28:53	 Logical clock time: 11
+Received message	 System time: 10:28:57	 Logical clock time: 12
+Received message	 System time: 10:29:01	 Logical clock time: 16
+Received message	 System time: 10:29:05	 Logical clock time: 21
+Received message	 System time: 10:29:09	 Logical clock time: 23
+Received message	 System time: 10:29:13	 Logical clock time: 24
+Received message	 System time: 10:29:17	 Logical clock time: 31
+Received message	 System time: 10:29:21	 Logical clock time: 44
+Received message	 System time: 10:29:26	 Logical clock time: 46
+Internal event	 System time: 10:29:30	 Logical clock time: 47
+Received message	 System time: 10:29:34	 Logical clock time: 53
+Received message	 System time: 10:29:38	 Logical clock time: 56
+Received message	 System time: 10:29:42	 Logical clock time: 61
+Received message	 System time: 10:29:46	 Logical clock time: 68
+Internal event	 System time: 10:29:50	 Logical clock time: 69
+Sent message:'69'	 System time: 10:29:54	 Logical clock time: 70
+Received message	 System time: 10:29:58	 Logical clock time: 78
+Internal event	 System time: 10:30:02	 Logical clock time: 79
+Received message	 System time: 10:30:06	 Logical clock time: 85
+Received message	 System time: 10:30:10	 Logical clock time: 86
+Received message	 System time: 10:30:14	 Logical clock time: 90

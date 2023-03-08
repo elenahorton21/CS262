@@ -1,10 +1,10 @@
-Process 2 has a clock rate of 12
+Process 2 has a clock rate of 10
 
-Received message	 System time: 09:54:11	 Logical clock time: 1
-Internal event	 System time: 09:54:23	 Logical clock time: 2
-Received message	 System time: 09:54:35	 Logical clock time: 3
-Received message	 System time: 09:54:47	 Logical clock time: 4
-Received message	 System time: 09:54:59	 Logical clock time: 8
-Received message	 System time: 09:55:11	 Logical clock time: 14
-Received message	 System time: 09:55:23	 Logical clock time: 16
-Received message	 System time: 09:55:35	 Logical clock time: 20
+Sent message:'0'	 System time: 10:29:31	 Logical clock time: 1
+Received message	 System time: 10:29:41	 Logical clock time: 3
+Received message	 System time: 10:29:51	 Logical clock time: 4
+Received message	 System time: 10:30:01	 Logical clock time: 6
+Received message	 System time: 10:30:11	 Logical clock time: 17
+Received message	 System time: 10:30:21	 Logical clock time: 36
+Received message	 System time: 10:30:31	 Logical clock time: 41
+Received message	 System time: 10:30:41	 Logical clock time: 49
