@@ -4,8 +4,8 @@ This folder contains our logical clock model code.
 # Installation
 To set up your environment to run our code:
 1) Run `pip install -r requirements.txt` from this folder. 
-2) Adjust any configuration values you'd like to in `config.py`. `MAX_CLOCK_RANGE` defines the random interval of clock rates chosen by a process. The default is a choice between 1 and 6. But changing this value to 10 would change that interval to random between 1 and 10. Similarly, `MAX_PROBABILITY` is the range for interval events. The default is 10 by the specs, but decreasing this to 6 would decrease the probability of an internal event happening from 7/10 to 1/2. This cannot be less than 3. 
-2) Run `python3 main.py` from this folder.
+2) Adjust any configuration values you'd like to in the `config` dictionary at the top of `main.py`. `MAX_CLOCK_RANGE` defines the random interval of clock rates chosen by a process. The default is a choice between 1 and 6. But changing this value to 10 would change that interval to a random number between 1 and 10. Similarly, `MAX_PROBABILITY` is the range for interval events. The default is 10 by the specs, but decreasing this to 6 would decrease the probability of an internal event happening from 7/10 to 1/2. This cannot be less than 3. 
+3) Run `python3 main.py` from this folder.
 
 # Usage
 
@@ -13,23 +13,23 @@ This model clock experiment can be run simply by calling `python3 main.py` from 
 
 To exit the program, just quit throuch `CTRL + C`.
 
-# Structure
+# Structure & Design
 
-The structure of our system is pretty simple:
-- `main.py` contains the core module, which runs three virtual machines according to the assignment specifications. Each virtual machine "model clock" writes to its own log files. All log files are contained in the `logs` directory. 
-- The primary data structure that we use for our system is the `Queue` libary, which allows to multiple processes to share a single queue through locking. 
-- Our system is run through a simulated through a single main program, which creates three sub processes using the `multiprogramming` library. 
+The design of our system is fairly simple:
+- `main.py` contains the core module, which runs three virtual machines according to the assignment specifications. Each virtual machine writes to its own log files. All log files are contained in the `logs` directory. 
+- The `VirtualMachine` class is a subclass of `multiprocessing.Process` where the `run()` method is overwritten to call `step()` (the operations for one clock tick) `n` times every minute, where `n` is the instance's `clock_rate` property.
+- To communicate between virtual machines, we use the `multiprocessing.Queue` class, which exchanges data between processes by pickling it and then sending using pipes.
 
 # Testing
 
 For details on our experiments, please see the `Engineering Notebook` section below.
 
-- TODO add testing instructions
+Unit tests can be run by calling `pytest` from the `LogicalClock` directory.
 
 # Limitations
 
-1) Because of our decision to use multiprogramming to simulate our model clocks through subprocesses, this program cannot be run across different machines. We chose to simulate through a single machine.
-    -  More specifically, the queue module implements multi-producer, multi-consumer queues. The Queue class in this module implements all the required locking semantics, and the multiprocessing queues are sent between processes by serializing its objects through pipes. The choice simplifies programming while still accurately reflecting the results of our model clock system.
+1) Since our implementation uses `multiprocessing.Queue` to simulate exchanging data between machines, it inherently does not scale when deploying across different machines. 
+    -  More specifically, the queue module implements multi-producer, multi-consumer queues. The Queue class in this module implements all the required locking semantics, and the multiprocessing queues are sent between processes by serializing its objects and sending them through pipes. The choice simplifies our implementation and testing while still accurately reflecting the results of our model clock system.
 2) A limitation of the `Queue` class is that, on some Unix machines (including our own), the `.qsize()` method that returns the size of the queue is not able to be implemented. This doesn't effect the results of the experiment in any meaningful way, it jus tmeans we can't precisely view the sizes of the queues.
 
 # Engineering Notebook
@@ -45,8 +45,8 @@ In the first five experiments, we noticed a few common patterns:
 
 
 ## Engineering Decisions
-1) The first major decision we made was to use the `multiprogramming` library. We chose to use this to simplify communication between our programs through the `Queue` class. This allows us to observe the accurate results of the experiments without handling socket logic. We also considered reusing aspects of our `grpc` chat bot for a simplified communication channel, but this would require having an app state system in place rather than direct communication between the processes. In the end, `multiprogramming` seemed to be the simplest solution for our goals of observing results of different model clocks. 
-2) Unfortunately, this decision led to some unforeseen complications in other changes we'd like to make, like gracefully exiting the program or being able to view the queue size on our development systems. However, these were not breaking to the overall project specifications. 
+1) The first major decision we made was to use the `multiprocessing` library. For one, this allows us to easily spawn and orchestrate multiple processes in one program. Furthermore, the `multiprocessing.Queue` class provides a simple interface for exchanging data between processes that do not share memory. This allows us to observe the accurate results of the experiments without handling socket logic. We also considered reusing aspects of our `grpc` chat bot for a simplified communication channel, but this would require having an app state system in place rather than direct communication between the processes. Additionally, we felt that using sockets would make testing significantly more complicated, since with `multiprocessing.Queue` we are able to more or less treat data exchange as accessing shared memory, even though under the hood this is not the case. In the end, `multiprocessing` seemed to be the simplest solution for our goal of observing results with different model clocks. 
+2) Unfortunately, this decision led to some unforeseen complications in other changes we'd like to make, like gracefully exiting the program or being able to view the queue size on our development systems. However, these were not significant limitations with respect to the overall project specifications. 
 3) To execute the model clock logic, we decided to have each virtual machine run through it's work on a single step, contained in the `.step()` function of the `VirtualMachine` class. Each `VirtualMachine` process has a set clock. The `run()` function of the `VirtualMachine` just contains calls for it to `step()`, i.e. run the logic of the system, and then `sleep()` for its pre-defined clock time. We considered doing this in other ways (having this all be in one function, or having the `VirtualMachine` be it's own program entirely), but this implementation seemed cleanest and most logical to us. 
 
 
