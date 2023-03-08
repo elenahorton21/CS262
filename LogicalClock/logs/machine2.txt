@@ -1,3 +1,7 @@
-Process 2 has a clock rate of 5
+Process 2 has a clock rate of 4
 
-Internal event	 System time: 17:35:43	 Logical clock time: 1
+Internal event	 System time: 10:44:54	 Logical clock time: 1
+Sent message:'1'	 System time: 10:44:58	 Logical clock time: 2
+Received message	 System time: 10:45:02	 Logical clock time: 3
+Received message	 System time: 10:45:06	 Logical clock time: 4
+Received message	 System time: 10:45:10	 Logical clock time: 7

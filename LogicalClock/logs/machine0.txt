@@ -1,3 +1,11 @@
-Process 0 has a clock rate of 6
+Process 0 has a clock rate of 2
 
-Sent message:'0'	 System time: 17:35:43	 Logical clock time: 1
+Sent message:'0'	 System time: 10:44:54	 Logical clock time: 1
+Internal event	 System time: 10:44:56	 Logical clock time: 2
+Sent message:'2'	 System time: 10:44:58	 Logical clock time: 3
+Sent message:'3'	 System time: 10:45:00	 Logical clock time: 4
+Internal event	 System time: 10:45:02	 Logical clock time: 5
+Sent message:'5'	 System time: 10:45:04	 Logical clock time: 6
+Sent message:'6'	 System time: 10:45:06	 Logical clock time: 7
+Sent message:'7'	 System time: 10:45:08	 Logical clock time: 8
+Sent message:'8'	 System time: 10:45:10	 Logical clock time: 9

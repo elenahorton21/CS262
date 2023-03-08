@@ -8,7 +8,7 @@ import random
 import time
 from datetime import datetime
 import logging
-from config import *
+from .config import *
 
 class VirtualMachine(Process):
     def __init__(self, id, queues, **kwargs):
