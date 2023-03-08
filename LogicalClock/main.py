@@ -1,6 +1,6 @@
 """
-TODO: Is using sleep to mimic the clock cycles okay?
-TODO: Maybe add a better way to stop program.
+Module that defines virtual machine behavior. Calling this module will spawn three virtual machines with random clock rates and log the
+results to corresponding files in the `/logs` folder.
 """
 from multiprocessing import Process, Queue
 import random
