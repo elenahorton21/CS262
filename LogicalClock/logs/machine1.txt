@@ -1,0 +1,13 @@
+Process 1 has a clock rate of 4
+
+Sent message:'0'	 System time: 13:16:26	 Logical clock time: 1
+Internal event	 System time: 13:16:41	 Logical clock time: 2
+Internal event	 System time: 13:16:56	 Logical clock time: 3
+Internal event	 System time: 13:17:11	 Logical clock time: 4
+Received message	 System time: 13:17:26	 Logical clock time: 6
+Internal event	 System time: 13:17:41	 Logical clock time: 7
+Internal event	 System time: 13:17:56	 Logical clock time: 8
+Received message	 System time: 13:18:11	 Logical clock time: 11
+Internal event	 System time: 13:18:26	 Logical clock time: 12
+Internal event	 System time: 13:18:41	 Logical clock time: 13
+Received message	 System time: 13:18:56	 Logical clock time: 15
