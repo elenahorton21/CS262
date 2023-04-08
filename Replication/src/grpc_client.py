@@ -14,6 +14,8 @@ from config import config
 MAX_BUFFER_SIZE = config["MAX_BUFFER_SIZE"]
 SERVER_ADDRESS = config["SERVER_ADDRESS"]
 SERVER_PORT = config["SERVER_PORT"]
+REPLICA1_PORT = config["REPLICA1_PORT"]
+REPLICA2_PORT = config["REPLICA2_PORT"]
 MAX_USERNAME = 20
 
 
@@ -139,12 +141,10 @@ class ServerThread(Thread):
                     print(response.message)
                 sleep(.5)
             except:
-                print("Bye!")
                 self.kill()
 
 # main loop for the client
-def run(IPaddress, port):
-    logged_in = False
+def run(IPaddress, port, logged_in, username):
     connectionString = str(IPaddress + ":" + str(port))
     print("Connecting on: " + connectionString)
 
@@ -184,13 +184,20 @@ def run(IPaddress, port):
             else: 
                 logged_in = handle_input(newInput, username, stub) # only returns false if the user is no longer logged in
         
-        # otherwise, exit the program
         channel.close()
-        sys.exit()
-            
+        
+        # see if the leader failed or if the user logged out
+        if logged_in == False:
+            sys.exit()
+        else:
+            return username
+
 
 if __name__ == "__main__":
     IP_address = SERVER_ADDRESS
     port = SERVER_PORT
-    run(IP_address, port)
+    username = run(IP_address, port, False, None)
+    username2 = run(IP_address, REPLICA1_PORT, True, username)
+    username3 = run(IP_address, REPLICA2_PORT, True, username2)
 
+## note, this should work once all the servers have the data updates live. right now it fails because the other servers aren't aware of the client
