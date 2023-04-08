@@ -11,7 +11,8 @@ from threading import Thread
 from config import config
 
 chatServer = App()
-leader = True
+global LEADER
+LEADER = False
 
 # Logging config
 logging.basicConfig(level=logging.DEBUG,
@@ -71,6 +72,7 @@ class Chat(chat_pb2_grpc.ChatServicer):
     # if a user has been deleted by another account, they are alerted
     def get_message(self, request, _context):
         username = request.user
+        LEADER = True
         msg = chatServer.get_messages(username)
         if msg == 100:
             return chat_pb2.ChatReply(message="LOGGED_OUT")
@@ -155,12 +157,26 @@ def serve(order):
         if order == 2:
             connectionString = str(SERVER_HOST + ":" + str(REPLICA1_PORT))
         else:
-            connectionString = str(SERVER_HOST + ":" + str(REPLICA2_PORT))      
+            connectionString = str(SERVER_HOST + ":" + str(REPLICA2_PORT))  
+
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
         chat_pb2_grpc.add_ChatServicer_to_server(Chat(), server)
         server.add_insecure_port(connectionString)
         server.start()
         print("GRPC Server started, listening on " + connectionString)
+        while not LEADER:
+            # heartbeat the leader, fill this in later. This logic will be how we switch leaders, either instigated by the client or the failed leader heartbeat
+            # For now, sleep 5 seconds then switch to leader
+            sleep(2)
+            print("Not the leader!")
+            # LEADER = True
+        
+        # if this is the 1st replica (2nd in line), then it must now take over updating the 3rd replica
+        if order == 2:
+            t = ServerThread(REPLICA2_PORT, 3)
+
+        # otherwise, this is the 3rd replica becoming the leader, last one standing. It doesn't need to update any other servers
+    
         server.wait_for_termination()
 
 

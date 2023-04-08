@@ -197,7 +197,7 @@ if __name__ == "__main__":
     IP_address = SERVER_ADDRESS
     port = SERVER_PORT
     username = run(IP_address, port, False, None)
-    username2 = run(IP_address, REPLICA1_PORT, True, username)
-    username3 = run(IP_address, REPLICA2_PORT, True, username2)
+    username2 = run(IP_address, REPLICA1_PORT, False, None)
+    username3 = run(IP_address, REPLICA2_PORT, False, None)
 
 ## note, this should work once all the servers have the data updates live. right now it fails because the other servers aren't aware of the client
