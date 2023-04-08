@@ -1,9 +1,46 @@
+"""
+Defines app state logic.
+
+TODO: Why is users a dictionary?
+"""
 import re
+import pickle
+
+
+ # A user contains the user's username and their list of messages
+class User:
+    def __init__(self, username):
+        self.username = username
+        self.logged_in = True
+        self.messages = []
+
+    # appends a message to the list of messages
+    def add_message(self, message):
+        self.messages.append(message)
+    
+    def log_out(self):
+        self.logged_in = False
+    
+    def log_in(self):
+        self.logged_in = True
+    
+    
+class Message:
+    def __init__(self, from_user, msg):
+        self.from_user = from_user
+        self.message = msg
+
 
 # holds the overall state of the application--> users and their message lists, allows the server to delete, list, and send messages
 class App:
-    def __init__(self):
-        self.users = {}
+    FILE_PATH = 'app.pickle'
+
+    def __init__(self, load_data=False):
+        if load_data:
+            # TODO: Error handling
+            self.users = pickle.load(self.FILE_PATH)
+        else:
+            self.users = {}
 
     # Adds a new user to the memory manager
     def create_user(self, username):
@@ -83,27 +120,7 @@ class App:
             self.users[username].log_out()
             return True
 
-
- 
- # A user contains the user's username and their list of messages
-class User:
-    def __init__(self, username):
-        self.username = username
-        self.logged_in = True
-        self.messages = []
-
-    # appends a message to the list of messages
-    def add_message(self, message):
-        self.messages.append(message)
-    
-    def log_out(self):
-        self.logged_in = False
-    
-    def log_in(self):
-        self.logged_in = True
-        
-
-class Message:
-    def __init__(self, from_user, msg):
-        self.from_user = from_user
-        self.message = msg
+    def save_state(self):
+        """Write the application state to a JSON file."""
+        with open(self.FILE_PATH, "wb") as f:
+            pickle.dump(self.users, f)
