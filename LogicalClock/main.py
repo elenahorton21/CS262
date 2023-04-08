@@ -1,6 +1,6 @@
 """
-TODO: Is using sleep to mimic the clock cycles okay?
-TODO: Maybe add a better way to stop program.
+Module that defines virtual machine behavior. Calling this module will spawn three virtual machines with random clock rates and log the
+results to corresponding files in the `/logs` folder.
 """
 from multiprocessing import Process, Queue
 import random
@@ -34,7 +34,7 @@ class VirtualMachine(Process):
         self.clock_rate = random.randint(1, config["MAX_CLOCK_RANGE"]) # The number of clock ticks per minute
         self.lclock = 0 # Initial value of logical clock 
         self.lclock_increment = 1 # Logical clock increment
-        self.log_file_path = f"logs/exp7_machine{id}.txt" # Logging file
+        self.log_file_path = f"logs/exp11_machine{id}.txt" # Logging file
         
         # Specify the IDs of the other machines and their order
         self.other_ids = [0, 1, 2]
@@ -167,7 +167,7 @@ class VirtualMachine(Process):
 def clear_logs():
     """Clear all the log files."""
     for i in range(3):
-        open(f'logs/exp7_machine{i}.txt', 'w').close()
+        open(f'logs/exp11_machine{i}.txt', 'w').close()
 
 
 def main():
