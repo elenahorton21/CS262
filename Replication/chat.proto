@@ -1,0 +1,46 @@
+syntax = "proto3";
+package chat;
+
+// defining our chat service
+service Chat{
+  rpc create_user (UserRequest) returns (ChatReply) {}
+  rpc list_users (ListRequest) returns (ChatReply) {}
+  rpc delete_user (DeleteRequest) returns (ChatReply) {}
+  rpc send_message (MessageRequest) returns (ChatReply) {}
+  rpc get_message (GetRequest) returns (ChatReply) {}
+  rpc chat_stream (MessageRequest) returns (stream ChatReply);
+  rpc logout_user(UserRequest) returns (ChatReply){}
+  rpc say_hello(ServerRequest) returns (ChatReply) {}
+
+}
+
+message UserRequest {
+  string username = 1;
+}
+
+message MessageRequest {
+  string from_user = 1;
+  string to_user = 2;
+  string message = 3;
+}
+
+message DeleteRequest {
+  string from_user = 1;
+  string to_user = 2;
+}
+
+message GetRequest {
+  string user = 1;
+}
+
+message ListRequest {
+  string wildcard = 1;
+}
+
+message ChatReply {
+  string message = 1;
+}
+
+message ServerRequest {
+  string message = 1;
+}
