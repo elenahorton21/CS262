@@ -3,13 +3,14 @@ from concurrent import futures
 import grpc
 import time
 import threading
+import pickle
 import logging
 
 from app import App 
 from config import config
-
 import chat_pb2 as chat
 import chat_pb2_grpc as rpc
+
 
 # Logging config
 logging.basicConfig(level=logging.DEBUG,
@@ -30,6 +31,7 @@ class Replica:
         self.address = address
         self.port = port
 
+
 # define all of the grpc functions on the server side
 class ChatServer(rpc.ChatServicer):
 
@@ -38,8 +40,11 @@ class ChatServer(rpc.ChatServicer):
         self.parent_replicas = parent_replicas
         self.server_id = len(parent_replicas) # 0, 1, 2
         self.is_primary = is_primary
-        self.state_updates = []
         self.app = App(load_data=True)
+
+        # NOTE: For now using these two variables to keep track of state updates
+        self.state_has_update = 0 
+        self.num_child_replicas = 2 - self.server_id
 
         # Create a connection for each parent replica
         self.conns = {}
@@ -70,14 +75,12 @@ class ChatServer(rpc.ChatServicer):
         conn_ind (int): The index of the connection
         """
         try:
-            for val in self.conns[conn_ind].StateUpdateStream(chat.Empty()):
-                print(f"Server {self.server_id} received message: {val}")
-                self.state = int(val.test)
-                # users = pickle.loads(val.bytes)
-                # self.app = App(users=users) 
+            for msg in self.conns[conn_ind].StateUpdateStream(chat.Empty()):
+                print(f"Server {conn_ind} sent state update with byte length {len(msg.state)} ")
         except Exception as e:
-            print("Error occurred")
+            print(f"Error occurred")
             print(e)
+            # Delete the connection
             del self.conns[conn_ind]
 
             # If no connections remain, set self to primary
@@ -85,9 +88,13 @@ class ChatServer(rpc.ChatServicer):
                 self.is_primary = True
                 print(f"Server {self.server_id} is now the primary.")
 
+            # Exit the thread
             return
+        else:
+            users = pickle.loads(msg.bytes)
+            self.app = App(users=users) 
 
-    # The stream which will be used to send state updates to child_replica.
+    # The stream which will be used to send heartbeats to child_replica.
     def HeartbeatStream(self, request, context):
         """
         This is a response-stream type call. This means the server can keep sending messages
@@ -99,7 +106,7 @@ class ChatServer(rpc.ChatServicer):
         # For every client ang infinite loop starts (in gRPC's own managed thread)
         n = 0
         while True:
-            # Only primary sends state updates
+            # Only primary sends heartbeats
             if self.is_primary:
                 n += 1                    
                 yield chat.Heartbeat(timestamp=str(n))
@@ -108,16 +115,21 @@ class ChatServer(rpc.ChatServicer):
     # TODO: Modify so that updates are removed from `self.state_updates` when they are yielded.
     def StateUpdateStream(self, request, context):
         while True:
-            if self.is_primary:
-                update = None
-                yield update
+            if self.is_primary and self.state_has_update > 0:
+                # Pickle app.users into bytes
+                state_pkl = pickle.dumps(self.app.users)
+                # Reset update flag so we don't braodcast again until state has changed
+                self.state_has_update -= 1
+                yield chat.StateUpdate(state=state_pkl)
 
-    def StateUpdate(self):
-        pass
-
+    # Putting this here in case we want to change to a less 
+    # hacky solution
+    def _state_has_update(self):
+        print("_state_has_update called")
+        self.state_has_update = self.num_child_replicas
+        
     def check_connection(self, request, context):
         return chat.Empty()
-
 
     # create a user--> 3 cases: 
     # (1) user is new, create a new account 
@@ -134,6 +146,8 @@ class ChatServer(rpc.ChatServicer):
         else:
             response = str("Welcome back " + username + " !")
         self.app.save_state()
+        # Set this flag to true so the thread knows to stream the updated state.
+        self._state_has_update()
         return chat.ChatReply(message=response)
 
     # send message (passes to App class, which will handle either 
@@ -145,9 +159,10 @@ class ChatServer(rpc.ChatServicer):
         print("sending message from: " + from_user + " to: " + str(to_user))
         result = self.app.send_message(from_user, to_user, msg)
         self.app.save_state()
+        # Set this flag to true so the thread knows to stream the updated state.
+        self._state_has_update()
 
         return chat.ChatReply(message = result)
-
 
     # list users matching with a wildcard
     def list_users(self, request, _context):
@@ -179,6 +194,8 @@ class ChatServer(rpc.ChatServicer):
             print("User " + user_to_delete + " deleted by " + user_deleting)
             response = "Success."
         self.app.save_state()
+        # Set this flag to true so the thread knows to stream the updated state.
+        self._state_has_update()
         return chat.ChatReply(message = response)
 
     # logout user
@@ -194,7 +211,6 @@ class ChatServer(rpc.ChatServicer):
         return chat.ChatReply(message = response)
 
 
-    
 if __name__ == '__main__':
     address = "0.0.0.0"
     replicas = [Replica(address, 5002), Replica(address, 5003), Replica(address, 5004)]
