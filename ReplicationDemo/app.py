@@ -37,7 +37,6 @@ class App:
     def __init__(self, load_data=False):
         if load_data:
             if not os.path.isfile(self.FILE_PATH):
-                print("not a file")
                 with open(self.FILE_PATH,'wb') as file:
                     pickle.dump({}, file)
                 file.close() 

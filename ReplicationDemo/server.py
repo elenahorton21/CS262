@@ -96,7 +96,7 @@ class ChatServer(rpc.ChatServicer):
         :param context:
         :return:
         """
-        # For every client an infinite loop starts (in gRPC's own managed thread)
+        # For every client ang infinite loop starts (in gRPC's own managed thread)
         n = 0
         while True:
             # Only primary sends state updates
@@ -114,6 +114,9 @@ class ChatServer(rpc.ChatServicer):
 
     def StateUpdate(self):
         pass
+
+    def check_connection(self, request, context):
+        return chat.Empty()
 
 
     # create a user--> 3 cases: 

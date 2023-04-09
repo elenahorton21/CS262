@@ -13,6 +13,7 @@ service Chat{
   rpc logout_user(UserRequest) returns (ChatReply){}
   rpc StateUpdateStream (Empty) returns (stream StateUpdate);
   rpc HeartbeatStream (Empty) returns (stream Heartbeat);
+  rpc check_connection (Empty) returns (Empty);
 }
 
 message UserRequest {
