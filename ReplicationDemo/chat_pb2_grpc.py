@@ -60,6 +60,11 @@ class ChatStub(object):
                 request_serializer=chat__pb2.Empty.SerializeToString,
                 response_deserializer=chat__pb2.Heartbeat.FromString,
                 )
+        self.check_connection = channel.unary_unary(
+                '/chat.Chat/check_connection',
+                request_serializer=chat__pb2.Empty.SerializeToString,
+                response_deserializer=chat__pb2.Empty.FromString,
+                )
 
 
 class ChatServicer(object):
@@ -120,6 +125,12 @@ class ChatServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def check_connection(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_ChatServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -167,6 +178,11 @@ def add_ChatServicer_to_server(servicer, server):
                     servicer.HeartbeatStream,
                     request_deserializer=chat__pb2.Empty.FromString,
                     response_serializer=chat__pb2.Heartbeat.SerializeToString,
+            ),
+            'check_connection': grpc.unary_unary_rpc_method_handler(
+                    servicer.check_connection,
+                    request_deserializer=chat__pb2.Empty.FromString,
+                    response_serializer=chat__pb2.Empty.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -329,5 +345,22 @@ class Chat(object):
         return grpc.experimental.unary_stream(request, target, '/chat.Chat/HeartbeatStream',
             chat__pb2.Empty.SerializeToString,
             chat__pb2.Heartbeat.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def check_connection(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/chat.Chat/check_connection',
+            chat__pb2.Empty.SerializeToString,
+            chat__pb2.Empty.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

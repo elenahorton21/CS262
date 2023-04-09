@@ -144,13 +144,21 @@ class ServerThread(Thread):
                 self.kill()
 
 # main loop for the client
-def run(IPaddress, port, logged_in, username):
+def run(IPaddress, port, info):
+    logged_in = info[0]
+    username = info[1]
     connectionString = str(IPaddress + ":" + str(port))
     print("Connecting on: " + connectionString)
 
     # initialize grpc channel
     with grpc.insecure_channel(connectionString) as channel:
         stub = chat_pb2_grpc.ChatStub(channel)
+
+        # first check for a conenection
+        try: response = stub.check_connection(chat_pb2.Empty())
+        except: 
+            print("Channel " + connectionString + " is closed.")
+            return [False, None]
 
         # run the login loop until the user successfully logs in
         while not logged_in:
@@ -190,24 +198,19 @@ def run(IPaddress, port, logged_in, username):
         if logged_in == False:
             sys.exit()
         else:
-            return username
+            return [True, username]
 
 
 if __name__ == "__main__":
     IP_address = SERVER_ADDRESS
     port = SERVER_PORT
-    try: 
-        username = run(IP_address, port, False, None)
-    except:
-        print("Primary server is down.")
 
-    try: 
-        username2 = run(IP_address, REPLICA1_PORT, False, None)
-    except:
-        print("First replica is also down.")
-    try:
-        username3 = run(IP_address, REPLICA2_PORT, False, None)
-    except:
-        print("All servers are currently down.")
+
+    try: info = run(IP_address, port, False, None)
+    except: print("Primary server is down.")
+    try: info1 = run(IP_address, REPLICA1_PORT, info)
+    except: print("First replica is also down.")
+    try: info2 = run(IP_address, REPLICA2_PORT, info1)
+    except: print("All servers are currently down.")
 
 ## note, this should work once all the servers have the data updates live. right now it fails because the other servers aren't aware of the client

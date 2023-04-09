@@ -103,7 +103,7 @@ class ChatServer(rpc.ChatServicer):
         :param context:
         :return:
         """
-        # For every client an infinite loop starts (in gRPC's own managed thread)
+        # For every client ang infinite loop starts (in gRPC's own managed thread)
         n = 0
         while True:
             # Only primary sends heartbeats
@@ -127,6 +127,9 @@ class ChatServer(rpc.ChatServicer):
     def _state_has_update(self):
         print("_state_has_update called")
         self.state_has_update = self.num_child_replicas
+        
+    def check_connection(self, request, context):
+        return chat.Empty()
 
     # create a user--> 3 cases: 
     # (1) user is new, create a new account 
