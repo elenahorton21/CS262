@@ -45,6 +45,10 @@ class Chat(chat_pb2_grpc.ChatServicer):
             response = "This username is already logged in. Please choose another one."
         else:
             response = str("Welcome back " + username + " !")
+
+        
+        # bytes_to_send = self.pickle_state()
+        # self.state_updates.append(bytes_to_send)
         return chat_pb2.ChatReply(message=response)
 
     # send message (passes to App class, which will handle either 

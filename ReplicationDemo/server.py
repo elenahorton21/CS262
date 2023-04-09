@@ -20,7 +20,8 @@ class ChatServer(rpc.ReplicaServiceServicer):  # inheriting here from the protob
         self.parent_replicas = parent_replicas
         self.server_id = len(parent_replicas) # 0, 1, 2
         self.is_primary = is_primary
-        self.state_updates = []        
+        self.state_updates = []
+        # self.app = App(load_data=True)
 
         # Create a connection for each parent replica
         self.conns = {}
@@ -54,6 +55,8 @@ class ChatServer(rpc.ReplicaServiceServicer):  # inheriting here from the protob
             for val in self.conns[conn_ind].StateUpdateStream(chat.Empty()):
                 print(f"Server {self.server_id} received message: {val}")
                 self.state = int(val.test)
+                # users = pickle.loads(val.bytes)
+                # self.app = App(users=users) 
         except Exception as e:
             print("Error occurred")
             print(e)
@@ -91,6 +94,10 @@ class ChatServer(rpc.ReplicaServiceServicer):  # inheriting here from the protob
                 for update in self.state_updates:
                     yield update
 
+    def pickle_state(self):
+        pass
+
+    
 if __name__ == '__main__':
     address = "0.0.0.0"
     replicas = [Replica(address, 5002), Replica(address, 5003), Replica(address, 5004)]

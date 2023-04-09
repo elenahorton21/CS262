@@ -9,7 +9,9 @@ message Heartbeat {
 }
 
 message StateUpdate {
-    string test = 1; // Temporary data
+    string action = 1; // Temporary data
+    string key = 2;
+    string data = 3;
 }
 
 service ReplicaService {
