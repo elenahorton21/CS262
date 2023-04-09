@@ -16,12 +16,11 @@ class Replica:
 
 class ChatServer(rpc.ReplicaServiceServicer):  # inheriting here from the protobuf rpc file which is generated
     def __init__(self, parent_replicas=[], is_primary=False):
-        self.state = 0
+        self.state = 0 # Test value, can ignore
         self.parent_replicas = parent_replicas
-        print(len(parent_replicas))
         self.server_id = len(parent_replicas) # 0, 1, 2
         self.is_primary = is_primary
-        self.state = 0 # TODO: Test
+        self.state_updates = []        
 
         # Create a connection for each parent replica
         self.conns = {}
@@ -35,6 +34,7 @@ class ChatServer(rpc.ReplicaServiceServicer):  # inheriting here from the protob
             # can use this to know when `self` is the primary.
             channel.subscribe(lambda event: self.__channel_connectivity_callback(event, ind))
 
+    # TODO: This is never called when I exit the program on Terminal.
     def __channel_connectivity_callback(self, event, conn_ind):
         print("Callback called")
         # Remove the channel from self.conns
@@ -57,10 +57,17 @@ class ChatServer(rpc.ReplicaServiceServicer):  # inheriting here from the protob
         except Exception as e:
             print("Error occurred")
             print(e)
+            del self.conns[conn_ind]
+
+            # If no connections remain, set self to primary
+            if not self.conns:
+                self.is_primary = True
+                print(f"Server {self.server_id} is now the primary.")
+
             return
 
     # The stream which will be used to send state updates to child_replica.
-    def StateUpdateStream(self, request, context):
+    def HeartbeatStream(self, request, context):
         """
         This is a response-stream type call. This means the server can keep sending messages
         Every client opens this connection and waits for server to send new messages
@@ -74,9 +81,14 @@ class ChatServer(rpc.ReplicaServiceServicer):  # inheriting here from the protob
             # Only primary sends state updates
             if self.is_primary:
                 n += 1                    
-                yield chat.StateUpdate(test=str(n))
+                yield chat.Heartbeat(timestamp=str(n))
             time.sleep(1)
 
+    # TODO: Modify so that updates are removed from `self.state_updates` when they are yielded.
+    def StateUpdateStream(self, request, context):
+        while True:
+            for update in self.state_updates:
+                yield update
 
 if __name__ == '__main__':
     address = "0.0.0.0"
