@@ -3,9 +3,26 @@ from concurrent import futures
 import grpc
 import time
 import threading
+import logging
 
-import proto.chat_pb2 as chat
-import proto.chat_pb2_grpc as rpc
+from app import App 
+from config import config
+
+import chat_pb2 as chat
+import chat_pb2_grpc as rpc
+
+# Logging config
+logging.basicConfig(level=logging.DEBUG,
+                    format='(%(threadName)-9s) %(message)s',)
+
+
+# Server config
+SERVER_HOST = config["SERVER_HOST"]
+SERVER_PORT = config["SERVER_PORT"]
+REPLICA1_PORT = config["REPLICA1_PORT"]
+REPLICA2_PORT = config["REPLICA2_PORT"]
+MAX_BUFFER_SIZE = config["MAX_BUFFER_SIZE"]
+MAX_NUM_CONNECTIONS = config["MAX_NUM_CONNECTIONS"]
 
 
 class Replica:
@@ -13,21 +30,22 @@ class Replica:
         self.address = address
         self.port = port
 
+# define all of the grpc functions on the server side
+class ChatServer(rpc.ChatServicer):
 
-class ChatServer(rpc.ReplicaServiceServicer):  # inheriting here from the protobuf rpc file which is generated
     def __init__(self, parent_replicas=[], is_primary=False):
         self.state = 0 # Test value, can ignore
         self.parent_replicas = parent_replicas
         self.server_id = len(parent_replicas) # 0, 1, 2
         self.is_primary = is_primary
         self.state_updates = []
-        # self.app = App(load_data=True)
+        self.app = App(load_data=True)
 
         # Create a connection for each parent replica
         self.conns = {}
         for ind, replica in enumerate(self.parent_replicas):
             channel = grpc.insecure_channel(replica.address + ':' + str(replica.port))
-            conn = rpc.ReplicaServiceStub(channel)
+            conn = rpc.ChatStub(channel)
             self.conns[ind] = conn
             threading.Thread(target=self.__listen_for_state_updates, args=(ind,), daemon=True).start()
 
@@ -78,7 +96,7 @@ class ChatServer(rpc.ReplicaServiceServicer):  # inheriting here from the protob
         :param context:
         :return:
         """
-        # For every client a infinite loop starts (in gRPC's own managed thread)
+        # For every client an infinite loop starts (in gRPC's own managed thread)
         n = 0
         while True:
             # Only primary sends state updates
@@ -91,11 +109,87 @@ class ChatServer(rpc.ReplicaServiceServicer):  # inheriting here from the protob
     def StateUpdateStream(self, request, context):
         while True:
             if self.is_primary:
-                for update in self.state_updates:
-                    yield update
+                update = None
+                yield update
 
-    def pickle_state(self):
+    def StateUpdate(self):
         pass
+
+
+    # create a user--> 3 cases: 
+    # (1) user is new, create a new account 
+    # (2) user is already logged in, refuse the login. 
+    # (3) user is already registered but not logged in. They are re-logged in and able to join.
+    def create_user(self, request, _context):
+        username = request.username
+        print("Joining user: " + username)
+        result = self.app.create_user(username)
+        if result == 0:
+            response = "SUCCESS"
+        elif result == 1:
+            response = "This username is already logged in. Please choose another one."
+        else:
+            response = str("Welcome back " + username + " !")
+        self.app.save_state()
+        return chat.ChatReply(message=response)
+
+    # send message (passes to App class, which will handle either 
+    # sending to a known user or broadcasting to all users)
+    def send_message(self, request, _context):
+        from_user = request.from_user
+        to_user = request.to_user
+        msg = request.message
+        print("sending message from: " + from_user + " to: " + str(to_user))
+        result = self.app.send_message(from_user, to_user, msg)
+        self.app.save_state()
+
+        return chat.ChatReply(message = result)
+
+
+    # list users matching with a wildcard
+    def list_users(self, request, _context):
+        wildcard = request.wildcard
+        result = self.app.list_users(wildcard)
+
+        if result:
+            return chat.ChatReply(message = result)
+        else:
+            return chat.ChatReply(message= "No users to list.")
+
+    # get messages for a user
+    # if a user has been deleted by another account, they are alerted
+    def get_message(self, request, _context):
+        username = request.user        
+        msg = self.app.get_messages(username)
+        self.app.save_state()
+        if msg == 100:
+            return chat.ChatReply(message="LOGGED_OUT")
+        else:
+            return chat.ChatReply(message = msg)
+
+    # delete user
+    def delete_user(self, request, _context):
+        user_to_delete = request.to_user
+        user_deleting = request.from_user
+        response = self.app.delete_user(user_to_delete, user_deleting)
+        if response == True:
+            print("User " + user_to_delete + " deleted by " + user_deleting)
+            response = "Success."
+        self.app.save_state()
+        return chat.ChatReply(message = response)
+
+    # logout user
+    def logout_user(self, request, _context):
+        user = request.username
+        response = self.app.logout_user(user)
+        if response == True:
+            print("Logging out user " + user)
+            response = "SUCCESS"
+        else: response = "Error logging out."
+
+        self.app.save_state()
+        return chat.ChatReply(message = response)
+
 
     
 if __name__ == '__main__':
@@ -109,7 +203,7 @@ if __name__ == '__main__':
         # then no more clients able to connect to the server.
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))  # create a gRPC server
         is_primary = (len(parents) == 0) # Set the first to the primary
-        rpc.add_ReplicaServiceServicer_to_server(ChatServer(parent_replicas=parents, is_primary=is_primary), server)  # register the server to gRPC
+        rpc.add_ChatServiceServicer_to_server(ChatServer(parent_replicas=parents, is_primary=is_primary), server)  # register the server to gRPC
         # gRPC basically manages all the threading and server responding logic, which is perfect!
         print('Starting server. Listening...')
         server.add_insecure_port('[::]:' + str(repl.port))

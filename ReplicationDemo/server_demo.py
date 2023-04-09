@@ -5,8 +5,8 @@ import grpc
 import time
 import threading
 
-import proto.chat_pb2 as chat
-import proto.chat_pb2_grpc as rpc
+import chat_pb2 as chat
+import chat_pb2_grpc as rpc
 
 from server import Replica, ChatServer
 
@@ -22,7 +22,7 @@ if __name__ == '__main__':
         if ind == int(sys.argv[1]):
             server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))  # create a gRPC server
             is_primary = (len(parents) == 0) # Set the first to the primary
-            rpc.add_ReplicaServiceServicer_to_server(ChatServer(parent_replicas=parents, is_primary=is_primary), server)  # register the server to gRPC
+            rpc.add_ChatServicer_to_server(ChatServer(parent_replicas=parents, is_primary=is_primary), server)  # register the server to gRPC
             # gRPC basically manages all the threading and server responding logic, which is perfect!
             print('Starting server. Listening...')
             server.add_insecure_port('[::]:' + str(repl.port))
