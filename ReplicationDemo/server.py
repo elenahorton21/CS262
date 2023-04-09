@@ -87,8 +87,9 @@ class ChatServer(rpc.ReplicaServiceServicer):  # inheriting here from the protob
     # TODO: Modify so that updates are removed from `self.state_updates` when they are yielded.
     def StateUpdateStream(self, request, context):
         while True:
-            for update in self.state_updates:
-                yield update
+            if self.is_primary:
+                for update in self.state_updates:
+                    yield update
 
 if __name__ == '__main__':
     address = "0.0.0.0"
