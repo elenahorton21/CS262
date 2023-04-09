@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package chat;
+
+message Empty {}
+
+message Heartbeat {
+    string timestamp = 1;
+}
+
+message StateUpdate {
+    string test = 1; // Temporary data
+}
+
+service ReplicaService {
+    rpc StateUpdateStream (Empty) returns (stream StateUpdate);
+    rpc HeartbeatStream (Empty) returns (stream Heartbeat);
+}
