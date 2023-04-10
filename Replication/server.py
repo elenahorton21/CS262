@@ -72,7 +72,7 @@ class ChatServer(rpc.ChatServicer):
                 conn.StartupConsensus(msg)
 
             # Create a thread to listen to state updates from parent replicas.
-            threading.Thread(target=self.__listen_for_state_updates, args=(ind,), daemon=True).start()
+            threading.Thread(target=self._listen_for_state_updates, args=(ind,), daemon=True).start()
 
             # Subscribe to channel connectivity. This is an additional measure to monitor the state of the 
             # parent replicas.
@@ -91,7 +91,7 @@ class ChatServer(rpc.ChatServicer):
             if not self.conns:
                 self.is_primary = True
 
-    def __listen_for_state_updates(self, conn_ind):
+    def _listen_for_state_updates(self, conn_ind):
         """
         The `run()` function for threads that listen to state updates from parent replicas. If an 
         exception is raised, treat the parent replica as having failed and remove the connection.
@@ -103,6 +103,7 @@ class ChatServer(rpc.ChatServicer):
         Returns:
             None
         """
+
         try:
             # This will run whenever the parent replica yields a StateUpdate to StateUpdateStream
             for msg in self.conns[conn_ind].StateUpdateStream(chat.Empty()):
@@ -112,9 +113,10 @@ class ChatServer(rpc.ChatServicer):
                 logging.debug(f"Setting app users to {users}")
                 self.app.users = users
                 # Save the app state to the replica's "database"
-                self.app.save_state()
+                self._handle_state_update()
         except Exception as e:
             logging.info(f"Error occurred: {e}")
+            print(self.conns)
             # Delete the connection
             del self.conns[conn_ind]
 
@@ -136,7 +138,8 @@ class ChatServer(rpc.ChatServicer):
         # This flag is used to control when the server's state should be broadcast to children
         # replicas. The initial primary will broadcast twice (once for each backup), and the 
         # first backup will broadcast once (to the second backup).
-        self.state_has_update = 2 - self.server_id
+        if self.is_primary:
+            self.state_has_update = 2 - self.server_id
 
     # The stream which will be used to send heartbeats to child_replica.
     def HeartbeatStream(self, request, context):
