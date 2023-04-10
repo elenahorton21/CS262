@@ -42,10 +42,11 @@ class App:
                 file.close() 
                 self.users = {}
             else:
+                print("loading users")
                 infile = open(self.FILE_PATH,'rb')
                 self.users = pickle.load(infile)
                 infile.close() 
-        if users != None:
+        elif users != None:
             self.users = users
         else:
             self.users = {}
@@ -56,7 +57,7 @@ class App:
             self.users[username] = User(username)
             return 0
         elif username in self.users and self.users[username].logged_in == True:
-            return 1
+            return 0
         else:
             self.users[username].logged_in = True # log back in
             return 2
