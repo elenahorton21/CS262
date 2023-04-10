@@ -77,6 +77,9 @@ class ChatServer(rpc.ChatServicer):
         try:
             for msg in self.conns[conn_ind].StateUpdateStream(chat.Empty()):
                 print(f"Server {conn_ind} sent state update with byte length {len(msg.state)} ")
+                users = pickle.loads(msg.state)
+                print(f"Setting app users to {users}")
+                self.app = App(users=users) 
         except Exception as e:
             print(f"Error occurred")
             print(e)
@@ -90,9 +93,6 @@ class ChatServer(rpc.ChatServicer):
 
             # Exit the thread
             return
-        else:
-            users = pickle.loads(msg.bytes)
-            self.app = App(users=users) 
 
     # The stream which will be used to send heartbeats to child_replica.
     def HeartbeatStream(self, request, context):

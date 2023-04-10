@@ -170,8 +170,7 @@ def run(IPaddress, port, info):
 
         # once logged in, start the server thread to get messages from the server
         t = ServerThread(stub, username)
-        t.logged_in = True
-            
+        t.logged_in = True            
         
         # Display initial usage suggestions
         print("")
@@ -206,7 +205,7 @@ if __name__ == "__main__":
     port = SERVER_PORT
 
 
-    try: info = run(IP_address, port, False, None)
+    try: info = run(IP_address, port, [False, None])
     except: print("Primary server is down.")
     try: info1 = run(IP_address, REPLICA1_PORT, info)
     except: print("First replica is also down.")

@@ -34,7 +34,7 @@ class Message:
 class App:
     FILE_PATH = 'app.pickle'
 
-    def __init__(self, load_data=False):
+    def __init__(self, users=None, load_data=False):
         if load_data:
             if not os.path.isfile(self.FILE_PATH):
                 with open(self.FILE_PATH,'wb') as file:
@@ -45,6 +45,8 @@ class App:
                 infile = open(self.FILE_PATH,'rb')
                 self.users = pickle.load(infile)
                 infile.close() 
+        if users != None:
+            self.users = users
         else:
             self.users = {}
         
@@ -84,6 +86,8 @@ class App:
     
     def get_messages(self, username):
         if username not in self.users or self.users[username].logged_in == False:
+            for u in self.users:
+                print(u)
             return 100
         elif len(self.users[username].messages) == 0:
             return "NONE"
