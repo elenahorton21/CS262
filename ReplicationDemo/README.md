@@ -58,7 +58,7 @@ This code has a few key files, along with supplemental files:
 5) Supplemental files include `chat.proto`, our prototype definition file, `generate-proto.sh`, a simple script to auto-generatre the associated grpc files `chat_pb2.py`, `chat_pb2_grpc.py`, and `chat_pb2.pyi`. `config.py` contains the pre-defined settings for maximum connections, max buffer length, hostname, port, and server IP address.
 
 # Testing
-You can run `pytest -v grpc_unit_test.py` to view the output of the unit tests on different aspects of the solution. 
+You can run `pytest -v unit_test.py` or `pytest -v test_app.py` to view the output of the unit tests on different aspects of the solution. 
 
 We also ran several manual tests to evaluate proper fault tolerance behavior. These manual tests included:
 1) Set up the system with 3 clients, then killing the lead server process. Check all client chat functionality. Then kill another replica and check all functionality again.
@@ -85,7 +85,7 @@ The replicas each are tracking the heartbeat(s) of the servers ahead of them in 
 
 ## Persistence
 
-Persistence is handled by a file, `app.pickle`, that each server reads from upon starting up. Whenever a change is initiated in the app state, the lead server broadcasts the change to the replicas and saves the app state to the `app.pickle` file. 
+Persistence is handled by a file, `app.pickle`, that each server reads from upon starting up. Whenever a change is initiated in the app state, the lead server broadcasts the change to the replicas and saves the app state to the `app.pickle` file. Upon bootup, the servers compare who had the most recent version of the state file by comparing timestamps. The latest timestamp is deemed the most recent version and a state consensus is reached. 
 
 
 # Engineering Notebook
@@ -101,3 +101,5 @@ Persistence is handled by a file, `app.pickle`, that each server reads from upon
 **4/6**: Working on state updates, added `StateUpdateStream` to teh grpc proto file. State updates are sent from each action module of the `server` module as bytes to the other servers. The servers then uses `pickle` to translate those bytes into our app data structure, and resets the app state to that value. We decided on this state update mechanism as opposed to smaller, specific state updates because it was a simpler solution and guaranteed that the state update stayed consistent. With this decision, we are sacrificing bandwidth for greater reliability.
 
 **4/8**: Testing different scenarios manually, documenting each of these in our `Testing` section above. 
+
+**4/10**: Added robustness for state persistence with a simple consensus algorithm for the most recent state file based on timestamps. This removes the limitation of the servers having to be on the same machine to access the latest version of the state appropriately.
