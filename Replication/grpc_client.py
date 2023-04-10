@@ -2,8 +2,8 @@
 Python program to implement client side of chat application.
 """
 import sys
-import chat_pb2
-import chat_pb2_grpc
+from proto import chat_pb2
+from proto import chat_pb2_grpc
 import grpc
 from threading import Thread
 from time import sleep

@@ -58,7 +58,7 @@ This code has a few key files, along with supplemental files:
 5) Supplemental files include `chat.proto`, our prototype definition file, `generate-proto.sh`, a simple script to auto-generatre the associated grpc files `chat_pb2.py`, `chat_pb2_grpc.py`, and `chat_pb2.pyi`. `config.py` contains the pre-defined settings for maximum connections, max buffer length, hostname, port, and server IP address.
 
 # Testing
-You can run `pytest -v grpc_unit_test.py` to view the output of the unit tests on different aspects of the solution. 
+You can run `pytest` or `python3 -m pytest` from any folder to view the output of the unit tests on different aspects of the solution. 
 
 We also ran several manual tests to evaluate proper fault tolerance behavior. These manual tests included:
 1) Set up the system with 3 clients, then killing the lead server process. Check all client chat functionality. Then kill another replica and check all functionality again.

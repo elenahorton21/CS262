@@ -4,6 +4,7 @@ Defines app state logic.
 import re
 import pickle
 import os
+import time
 
 
  # A user contains the user's username and their list of messages
@@ -32,27 +33,35 @@ class Message:
 
 # holds the overall state of the application--> users and their message lists, allows the server to delete, list, and send messages
 class App:
-    FILE_PATH = 'app.pickle'
+    """
+    This class contains the functionality for interacting with the chat application state. It also handles persisting the
+    application state.
+    """
+    FILE_PATH_SUFFIX = 'app.pickle' # Storing app state as pickle 
 
-    def __init__(self, users=None, load_data=False):
+    def __init__(self, users=None, load_data=False, file_path_prefix=None):
+        # If a prefix argument is provided, append this to the start of the file path
+        self.file_path = file_path_prefix + self.FILE_PATH_SUFFIX if file_path_prefix else self.FILE_PATH_SUFFIX
+
         if load_data:
-            if not os.path.isfile(self.FILE_PATH):
-                with open(self.FILE_PATH,'wb') as file:
+            # If no data file exists, create one
+            if not os.path.isfile(self.file_path):
+                with open(self.file_path,'wb') as file:
                     pickle.dump({}, file)
-                file.close() 
                 self.users = {}
+                self.last_modified_timestamp = time.time()
+            # Otherwise, set self.users to the contents of the file
             else:
-                print("loading users")
-                infile = open(self.FILE_PATH,'rb')
-                self.users = pickle.load(infile)
-                infile.close() 
-        elif users != None:
-            self.users = users
+                print(f"Loading application state from {self.file_path}")
+                with open(self.file_path, 'rb') as file:
+                    self.users = pickle.load(file)
+                self.last_modified_timestamp = os.path.getmtime(self.file_path)
         else:
-            self.users = {}
-        
-    # Adds a new user to the memory manager
+            self.users = users if users else {}
+            self.last_modified_timestamp = time.time()
+
     def create_user(self, username):
+        """Add a new user to the application state."""
         if username not in self.users:
             self.users[username] = User(username)
             return 0
@@ -83,7 +92,6 @@ class App:
                     self.users[u].add_message(msg)
                     print ("adding message to " + u + " 's queue")
         return "Success"
-
     
     def get_messages(self, username):
         if username not in self.users or self.users[username].logged_in == False:
@@ -133,5 +141,6 @@ class App:
 
     def save_state(self):
         """Write the application state to a JSON file."""
-        with open(self.FILE_PATH, "wb") as f:
+        with open(self.file_path, "wb") as f:
             pickle.dump(self.users, f)
+        self.last_modified_timestamp = time.time()

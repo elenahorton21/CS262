@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import chat_pb2 as chat__pb2
+from . import chat_pb2 as chat__pb2
 
 
 class ChatStub(object):
@@ -63,6 +63,11 @@ class ChatStub(object):
         self.check_connection = channel.unary_unary(
                 '/chat.Chat/check_connection',
                 request_serializer=chat__pb2.Empty.SerializeToString,
+                response_deserializer=chat__pb2.Empty.FromString,
+                )
+        self.StartupConsensus = channel.unary_unary(
+                '/chat.Chat/StartupConsensus',
+                request_serializer=chat__pb2.ConsensusMessage.SerializeToString,
                 response_deserializer=chat__pb2.Empty.FromString,
                 )
 
@@ -131,6 +136,12 @@ class ChatServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def StartupConsensus(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_ChatServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -182,6 +193,11 @@ def add_ChatServicer_to_server(servicer, server):
             'check_connection': grpc.unary_unary_rpc_method_handler(
                     servicer.check_connection,
                     request_deserializer=chat__pb2.Empty.FromString,
+                    response_serializer=chat__pb2.Empty.SerializeToString,
+            ),
+            'StartupConsensus': grpc.unary_unary_rpc_method_handler(
+                    servicer.StartupConsensus,
+                    request_deserializer=chat__pb2.ConsensusMessage.FromString,
                     response_serializer=chat__pb2.Empty.SerializeToString,
             ),
     }
@@ -361,6 +377,23 @@ class Chat(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/chat.Chat/check_connection',
             chat__pb2.Empty.SerializeToString,
+            chat__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def StartupConsensus(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/chat.Chat/StartupConsensus',
+            chat__pb2.ConsensusMessage.SerializeToString,
             chat__pb2.Empty.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
