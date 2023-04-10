@@ -35,10 +35,12 @@ class Message:
 class App:
     FILE_PATH = 'app.pickle'
 
-    def __init__(self, load_data=False):
+    def __init__(self, users=None, load_data=False):
         if load_data:
             # TODO: Error handling
             self.users = pickle.load(self.FILE_PATH)
+        elif users:
+            self.users = users
         else:
             self.users = {}
 
