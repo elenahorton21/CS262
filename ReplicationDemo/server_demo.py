@@ -4,6 +4,7 @@ import sys
 import grpc
 import time
 import threading
+from config import config
 
 import chat_pb2 as chat
 import chat_pb2_grpc as rpc
@@ -11,7 +12,7 @@ import chat_pb2_grpc as rpc
 from server import Replica, ChatServer
 
 if __name__ == '__main__':
-    address = "0.0.0.0"
+    address = config["SERVER_HOST"]
     replicas = [Replica(address, 5002), Replica(address, 5003), Replica(address, 5004)]
     # Simple loop to initialize ChatServer instances with the appropriate parent replicas
     parents = []

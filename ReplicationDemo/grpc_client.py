@@ -204,12 +204,11 @@ if __name__ == "__main__":
     IP_address = SERVER_ADDRESS
     port = SERVER_PORT
 
-
+    # main connection logic --> start with the leader, then if it fails, rejoin to a replica. If the replica is down, it will try the other one.
     try: info = run(IP_address, port, [False, None])
     except: print("Primary server is down.")
     try: info1 = run(IP_address, REPLICA1_PORT, info)
-    except: print("First replica is also down.")
+    except: print("First replica is down.")
     try: info2 = run(IP_address, REPLICA2_PORT, info1)
     except: print("All servers are currently down.")
 
-## note, this should work once all the servers have the data updates live. right now it fails because the other servers aren't aware of the client
