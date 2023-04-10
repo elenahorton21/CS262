@@ -4,7 +4,7 @@ Defines app state logic.
 import re
 import pickle
 import os
-
+import time
 
  # A user contains the user's username and their list of messages
 class User:
@@ -32,25 +32,32 @@ class Message:
 
 # holds the overall state of the application--> users and their message lists, allows the server to delete, list, and send messages
 class App:
-    FILE_PATH = 'app.pickle'
+    FILE_PATH_SUFFIX = 'app.pickle'
 
-    def __init__(self, users=None, load_data=False):
+    def __init__(self, users=None, load_data=False, file_path_prefix=None):
+        # File path
+        self.file_path = file_path_prefix + self.FILE_PATH_SUFFIX if file_path_prefix else self.FILE_PATH_SUFFIX
+
         if load_data:
-            if not os.path.isfile(self.FILE_PATH):
-                with open(self.FILE_PATH,'wb') as file:
+            if not os.path.isfile(self.file_path):
+                with open(self.file_path,'wb') as file:
                     pickle.dump({}, file)
                 file.close() 
                 self.users = {}
+                self.last_modified_timestamp = time.time()
             else:
                 print("loading users")
-                infile = open(self.FILE_PATH,'rb')
+                infile = open(self.file_path,'rb')
                 self.users = pickle.load(infile)
+                self.last_modified_timestamp = os.path.getmtime(self.file_path)
                 infile.close() 
         elif users != None:
             self.users = users
+            self.last_modified_timestamp = time.time()
         else:
             self.users = {}
-        
+            self.last_modified_timestamp = time.time()
+
     # Adds a new user to the memory manager
     def create_user(self, username):
         if username not in self.users:
@@ -83,7 +90,6 @@ class App:
                     self.users[u].add_message(msg)
                     print ("adding message to " + u + " 's queue")
         return "Success"
-
     
     def get_messages(self, username):
         if username not in self.users or self.users[username].logged_in == False:
@@ -133,5 +139,6 @@ class App:
 
     def save_state(self):
         """Write the application state to a JSON file."""
-        with open(self.FILE_PATH, "wb") as f:
+        with open(self.file_path, "wb") as f:
             pickle.dump(self.users, f)
+        self.last_modified_timestamp = time.time()

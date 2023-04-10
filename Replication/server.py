@@ -40,7 +40,7 @@ class ChatServer(rpc.ChatServicer):
         self.parent_replicas = parent_replicas
         self.server_id = len(parent_replicas) # 0, 1, 2
         self.is_primary = is_primary
-        self.app = App(load_data=True)
+        self.app = App(load_data=True, file_path_prefix=f"db/server{self.server_id}_")
 
         # NOTE: For now using these two variables to keep track of state updates
         self.state_has_update = 0 
@@ -52,11 +52,19 @@ class ChatServer(rpc.ChatServicer):
             channel = grpc.insecure_channel(replica.address + ':' + str(replica.port))
             conn = rpc.ChatStub(channel)
             self.conns[ind] = conn
+
+            # Send the timestamp and state to the primary for consensus check
+            if ind == 0:
+                curr_state_pkl = pickle.dumps(self.app.users)
+                msg = chat.ConsensusMessage(last_modified_ts=str(self.app.last_modified_timestamp), state=curr_state_pkl)
+                conn.StartupConsensus(msg)
+
             threading.Thread(target=self.__listen_for_state_updates, args=(ind,), daemon=True).start()
 
             # Subscribe to channel connectivity. Maybe combine this with self.conns so failed channels are removed. Then we 
             # can use this to know when `self` is the primary.
             channel.subscribe(lambda event: self.__channel_connectivity_callback(event, ind))
+
 
     # TODO: This is never called when I exit the program on Terminal.
     def __channel_connectivity_callback(self, event, conn_ind):
@@ -127,7 +135,17 @@ class ChatServer(rpc.ChatServicer):
     def _state_has_update(self):
         print("_state_has_update called")
         self.state_has_update = self.num_child_replicas
+    
+    def StartupConsensus(self, request, context):
+        """The primary will use this to check if a replica has a later timestamp."""
+        if float(request.last_modified_ts) > self.app.last_modified_timestamp:
+            users = pickle.loads(request.state)
+            print(f"Setting app users to {users}")
+            self.app = App(users=users)
+            self._state_has_update()
         
+        return chat.Empty()
+
     def check_connection(self, request, context):
         return chat.Empty()
 
