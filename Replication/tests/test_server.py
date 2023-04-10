@@ -45,9 +45,11 @@ def test__listen_for_state_updates_fails(mock_backup):
     # Mock the return value of StateUpdateStream
     mock_conn = MagicMock()
     mock_backup.conns = {0: mock_conn}
-    mock_conn.__getitem__().StateUpdateStream.side_effect = Exception("Mocked socket close")
+    mock_conn.StateUpdateStream.side_effect = Exception("Mocked socket close")
     mock_backup._listen_for_state_updates(0)
 
-    print(mock_backup.is_primary)
+    # The backup should be primary now
     assert mock_backup.is_primary 
     assert mock_backup.conns == {}
+
+

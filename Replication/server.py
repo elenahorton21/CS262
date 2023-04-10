@@ -116,7 +116,6 @@ class ChatServer(rpc.ChatServicer):
                 self._handle_state_update()
         except Exception as e:
             logging.info(f"Error occurred: {e}")
-            print(self.conns)
             # Delete the connection
             del self.conns[conn_ind]
 
