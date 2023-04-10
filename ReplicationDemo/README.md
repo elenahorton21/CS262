@@ -74,6 +74,25 @@ We also ran several manual tests to evaluate proper fault tolerance behavior. Th
 
 # Distributed System Design
 
+## Fault tolerance
+We designed our system in the following graphical way: 
+
+![Our distributed system design](./img/design.jpg)
+
+We establish a connection order for clients to follow. First, they try to connect to the lead server. Then, if that fails, they try to connect to the first replica. Finally, if both the lead server and the replica are down, they try to connect to the second replica.
+
+The replicas each are tracking the heartbeat(s) of the servers ahead of them in order. That is, the first replica is tracking the lead server's heartbeat, and the second replica is tracking the first replica and the lead server's heartbeat. If a server fails, they both know where they stand in the order and the highest-ordered active server takes over as the lead server. Simultaneously, the clients switch to the next active server in order, ensuring it is the true lead server.
+
+## Persistence
+
+Persistence is handled by a file, `app.pickle`, that each server reads from upon starting up. Whenever a change is initiated in the app state, the lead server broadcasts the change to the replicas and saves the app state to the `app.pickle` file. 
+
+
 # Engineering Notebook
 
-Some big decisions that were made:
+**4/1**: Designing our system. Debating having a lead server, or having the clients all broadcast to all replicas always. 
+**4/2**: Decided on a system where clients talk to a lead server. However, we are debating how to trigger a switch from lead server to the replicas. Came up with the idea to formally order the replicas, so if clients recognize that the server is down, they just switch to the next one in order. The downside of this is that it seems less elegant than the server's self-appointing a leader. 
+**4/3**: Designed the initial system with a lead server and clients able to auto-switch to replicas when they crash. However, it's not a very good solution for the clients to trigger the switch because the replica server thread that is listening for connections can't access a state variable for the server to know it is now the leader. Doing a redesign on the server system.
+**4/5**: Server system is resolved by introducing grpc streams to our proto file. These streams allow each of the servers to have a heartbeat with each other, allowing them to recognize themselves when a server goes down and switch into the leader role if necessary. Clients still automatically switch themselves. Added `HeartbeatStream` to the grpc proto file.
+**4/6**: Working on state updates, added `StateUpdateStream` to teh grpc proto file. State updates are sent from each action module of the `server` module as bytes to the other servers. The servers then uses `pickle` to translate those bytes into our app data structure, and resets the app state to that value. We decided on this state update mechanism as opposed to smaller, specific state updates because it was a simpler solution and guaranteed that the state update stayed consistent. With this decision, we are sacrificing bandwidth for greater reliability.
+**4/8**: Testing different scenarios manually, documenting each of these in our `Testing` section above. 
