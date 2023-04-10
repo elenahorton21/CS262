@@ -13,7 +13,9 @@ from server import Replica, ChatServer
 
 if __name__ == '__main__':
     address = config["SERVER_HOST"]
-    replicas = [Replica(address, 5002), Replica(address, 5003), Replica(address, 5004)]
+    address1 = config["REPLICA1_HOST"]
+    address2 = config["REPLICA2_HOST"]
+    replicas = [Replica(address, 5002), Replica(address1, 5003), Replica(address2, 5004)]
     # Simple loop to initialize ChatServer instances with the appropriate parent replicas
     parents = []
     servers = []
