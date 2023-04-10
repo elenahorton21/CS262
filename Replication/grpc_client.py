@@ -13,6 +13,8 @@ from config import config
 # Configuration
 MAX_BUFFER_SIZE = config["MAX_BUFFER_SIZE"]
 SERVER_ADDRESS = config["SERVER_ADDRESS"]
+REPLICA1_HOST = config["REPLICA1_HOST"]
+REPLICA2_HOST = config["REPLICA2_HOST"]
 SERVER_PORT = config["SERVER_PORT"]
 REPLICA1_PORT = config["REPLICA1_PORT"]
 REPLICA2_PORT = config["REPLICA2_PORT"]
@@ -207,8 +209,8 @@ if __name__ == "__main__":
     # main connection logic --> start with the leader, then if it fails, rejoin to a replica. If the replica is down, it will try the other one.
     try: info = run(IP_address, port, [False, None])
     except: print("Primary server is down.")
-    try: info1 = run(IP_address, REPLICA1_PORT, info)
+    try: info1 = run(REPLICA1_HOST, REPLICA1_PORT, info)
     except: print("First replica is down.")
-    try: info2 = run(IP_address, REPLICA2_PORT, info1)
+    try: info2 = run(REPLICA2_HOST, REPLICA2_PORT, info1)
     except: print("All servers are currently down.")
 
