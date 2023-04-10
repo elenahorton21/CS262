@@ -172,6 +172,7 @@ class ChatServer(rpc.ChatServicer):
         """
         while True:
             if self.is_primary and self.state_has_update > 0:
+                print("THis is called")
                 # Pickle app.users into bytes
                 state_pkl = pickle.dumps(self.app.users)
                 # Reset update flag so we don't broadcast again until state has changed

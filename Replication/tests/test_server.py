@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import patch, PropertyMock, MagicMock
 import pickle
 from testfixtures import compare
+import multiprocessing
 
 
 from server import ChatServer, Replica
@@ -10,12 +11,20 @@ import proto.chat_pb2 as chat
 
 
 @pytest.fixture
+def mock_primary():
+    """Return a primary ChatServer where dependecies are mocked."""
+    with patch("server.App", return_value=App()):
+        server = ChatServer(is_primary=True)
+        return server
+
+
+@pytest.fixture
 def mock_backup():
-    """Return a ChatServer where the gRPC logic is mocked."""
+    """Return a backup ChatServer where dependencies are mocked."""
     with patch("server.App", return_value=App()):
         server = ChatServer()
         return server
-
+    
 
 @pytest.fixture
 def app_data():
@@ -51,5 +60,4 @@ def test__listen_for_state_updates_fails(mock_backup):
     # The backup should be primary now
     assert mock_backup.is_primary 
     assert mock_backup.conns == {}
-
 
