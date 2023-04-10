@@ -6,6 +6,7 @@ import pickle
 import os
 import time
 
+
  # A user contains the user's username and their list of messages
 class User:
     def __init__(self, username):
@@ -32,34 +33,35 @@ class Message:
 
 # holds the overall state of the application--> users and their message lists, allows the server to delete, list, and send messages
 class App:
-    FILE_PATH_SUFFIX = 'app.pickle'
+    """
+    This class contains the functionality for interacting with the chat application state. It also handles persisting the
+    application state.
+    """
+    FILE_PATH_SUFFIX = 'app.pickle' # Storing app state as pickle 
 
     def __init__(self, users=None, load_data=False, file_path_prefix=None):
-        # File path
+        # If a prefix argument is provided, append this to the start of the file path
         self.file_path = file_path_prefix + self.FILE_PATH_SUFFIX if file_path_prefix else self.FILE_PATH_SUFFIX
 
         if load_data:
+            # If no data file exists, create one
             if not os.path.isfile(self.file_path):
                 with open(self.file_path,'wb') as file:
                     pickle.dump({}, file)
-                file.close() 
                 self.users = {}
                 self.last_modified_timestamp = time.time()
+            # Otherwise, set self.users to the contents of the file
             else:
-                print("loading users")
-                infile = open(self.file_path,'rb')
-                self.users = pickle.load(infile)
+                print(f"Loading application state from {self.file_path}")
+                with open(self.file_path, 'rb') as file:
+                    self.users = pickle.load(file)
                 self.last_modified_timestamp = os.path.getmtime(self.file_path)
-                infile.close() 
-        elif users != None:
-            self.users = users
-            self.last_modified_timestamp = time.time()
         else:
-            self.users = {}
+            self.users = users if users else {}
             self.last_modified_timestamp = time.time()
 
-    # Adds a new user to the memory manager
     def create_user(self, username):
+        """Add a new user to the application state."""
         if username not in self.users:
             self.users[username] = User(username)
             return 0

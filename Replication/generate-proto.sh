@@ -1,5 +1,4 @@
-PROTO_FILE="chat.proto"
-INCLUDE=.
-OUTPUT=.
-
-python3 -m grpc_tools.protoc -I$INCLUDE --python_out=$OUTPUT --grpc_python_out=$OUTPUT $PROTO_FILE
+#!/bin/bash
+echo "Generating proto grpc files..."
+python -m grpc_tools.protoc -I=proto/ --python_out=proto/ --grpc_python_out=proto/ proto/chat.proto
+echo "DONE"

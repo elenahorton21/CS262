@@ -8,8 +8,8 @@ import logging
 
 from app import App 
 from config import config
-import chat_pb2 as chat
-import chat_pb2_grpc as rpc
+import proto.chat_pb2 as chat
+import proto.chat_pb2_grpc as rpc
 
 
 # Logging config
@@ -27,6 +27,7 @@ MAX_NUM_CONNECTIONS = config["MAX_NUM_CONNECTIONS"]
 
 
 class Replica:
+    """Template for replica data."""
     def __init__(self, address, port):
         self.address = address
         self.port = port
@@ -34,84 +35,118 @@ class Replica:
 
 # define all of the grpc functions on the server side
 class ChatServer(rpc.ChatServicer):
-
+    """
+    Defines the gRPC server stubs. Also initializes intra-server communication with a server's parent replicas.
+    """
     def __init__(self, parent_replicas=[], is_primary=False):
-        self.state = 0 # Test value, can ignore
+        """
+        Initialize a ChatServer instance.
+
+        Args:
+            parent_replicas (List[Replica]): The replicas that this server will receive state updates from, e.g. 
+                the third server has first and second server as parents.
+            is_primary (bool): True if the server instance is the primary.
+        """
         self.parent_replicas = parent_replicas
-        self.server_id = len(parent_replicas) # 0, 1, 2
+        self.server_id = len(parent_replicas) # Returns 0, 1, or 2
         self.is_primary = is_primary
+
+        # This variable is used to track when the replica should yield state updates
+        self.state_has_update = 0 
+
+        # Load the application state from the replica-specific "database"
         self.app = App(load_data=True, file_path_prefix=f"db/server{self.server_id}_")
 
-        # NOTE: For now using these two variables to keep track of state updates
-        self.state_has_update = 0 
-        self.num_child_replicas = 2 - self.server_id
-
-        # Create a connection for each parent replica
+        # Create a connection for each parent replica.
         self.conns = {}
         for ind, replica in enumerate(self.parent_replicas):
             channel = grpc.insecure_channel(replica.address + ':' + str(replica.port))
             conn = rpc.ChatStub(channel)
             self.conns[ind] = conn
 
-            # Send the timestamp and state to the primary for consensus check
+            # Send the timestamp and state to the primary for consensus check. This is necessary in the 
+            # case that a child replica's "database" is ahead of its parents'.
             if ind == 0:
                 curr_state_pkl = pickle.dumps(self.app.users)
                 msg = chat.ConsensusMessage(last_modified_ts=str(self.app.last_modified_timestamp), state=curr_state_pkl)
                 conn.StartupConsensus(msg)
 
+            # Create a thread to listen to state updates from parent replicas.
             threading.Thread(target=self.__listen_for_state_updates, args=(ind,), daemon=True).start()
 
-            # Subscribe to channel connectivity. Maybe combine this with self.conns so failed channels are removed. Then we 
-            # can use this to know when `self` is the primary.
+            # Subscribe to channel connectivity. This is an additional measure to monitor the state of the 
+            # parent replicas.
             channel.subscribe(lambda event: self.__channel_connectivity_callback(event, ind))
 
-
-    # TODO: This is never called when I exit the program on Terminal.
     def __channel_connectivity_callback(self, event, conn_ind):
-        print("Callback called")
-        # Remove the channel from self.conns
+        """Callback function for when the channel connectivity changes with a parent replica."""
+        logging.debug(f"Connectivity callback called with event {conn_ind}")
+
+        # Remove the channel if the state is .SHUTDOWN
         if event == grpc.ChannelConnectivity.SHUTDOWN:
             print(f"Connection to server {conn_ind} ended.")
             del self.conns[conn_ind]
 
-        # If no connections remain, set self to primary
-        if not self.conns:
-            self.is_primary = True
+            # If no connections remain, set self to primary
+            if not self.conns:
+                self.is_primary = True
 
     def __listen_for_state_updates(self, conn_ind):
         """
-        conn_ind (int): The index of the connection
+        The `run()` function for threads that listen to state updates from parent replicas. If an 
+        exception is raised, treat the parent replica as having failed and remove the connection.
+        If no parent replicas remain, assume the role of primary. 
+
+        Args:
+            conn_ind (int): The index of the connection, equal to the server ID of the parent replica.
+
+        Returns:
+            None
         """
         try:
+            # This will run whenever the parent replica yields a StateUpdate to StateUpdateStream
             for msg in self.conns[conn_ind].StateUpdateStream(chat.Empty()):
-                print(f"Server {conn_ind} sent state update with byte length {len(msg.state)} ")
+                logging.debug(f"Server {conn_ind} sent state update with byte length {len(msg.state)} ")
+                # Set the application state to the content of the StateUpdate
                 users = pickle.loads(msg.state)
-                print(f"Setting app users to {users}")
-                self.app = App(users=users) 
+                logging.debug(f"Setting app users to {users}")
+                self.app.users = users
+                # Save the app state to the replica's "database"
+                self.app.save_state()
         except Exception as e:
-            print(f"Error occurred")
-            print(e)
+            logging.info(f"Error occurred: {e}")
             # Delete the connection
             del self.conns[conn_ind]
 
             # If no connections remain, set self to primary
             if not self.conns:
                 self.is_primary = True
-                print(f"Server {self.server_id} is now the primary.")
+                logging.info(f"Server {self.server_id} is now the primary.")
 
             # Exit the thread
             return
 
+    def _handle_state_update(self):
+        """
+        Contains the actions to take when the server's applications state has changed. Will write 
+        the changes to the server's "database" and broadcast them to the child replicas.
+        """
+        logging.debug("_handle_state_update called.")
+        self.app.save_state()
+        # This flag is used to control when the server's state should be broadcast to children
+        # replicas. The initial primary will broadcast twice (once for each backup), and the 
+        # first backup will broadcast once (to the second backup).
+        self.state_has_update = 2 - self.server_id
+
     # The stream which will be used to send heartbeats to child_replica.
     def HeartbeatStream(self, request, context):
         """
-        This is a response-stream type call. This means the server can keep sending messages
-        Every client opens this connection and waits for server to send new messages
-        :param request_iterator:
-        :param context:
-        :return:
+        A gRPC response-streaming method that yields a heartbeat every second. This can be used
+        by the child replicas to monitor when their parent replicas have died.
+
+        NOTE: We are not currently using this because we already monitor replica state with
+        the connectivity callback and by catching exceptions in the listening thread.
         """
-        # For every client ang infinite loop starts (in gRPC's own managed thread)
         n = 0
         while True:
             # Only primary sends heartbeats
@@ -120,40 +155,60 @@ class ChatServer(rpc.ChatServicer):
                 yield chat.Heartbeat(timestamp=str(n))
             time.sleep(1)
 
-    # TODO: Modify so that updates are removed from `self.state_updates` when they are yielded.
     def StateUpdateStream(self, request, context):
+        """
+        A gRPC response-streaming method that yields StateUpdate messages to child replicas. Only the 
+        primary will send state updates. The `state_has_update` flag is used to determine when the 
+        replica's state has changed and should be broadcast.
+
+        Args:
+            request (chat.Empty): The child replica sends an empty message to start the stream.
+            context: The context of the request.
+
+        Returns:
+            None
+        """
         while True:
             if self.is_primary and self.state_has_update > 0:
                 # Pickle app.users into bytes
                 state_pkl = pickle.dumps(self.app.users)
-                # Reset update flag so we don't braodcast again until state has changed
+                # Reset update flag so we don't broadcast again until state has changed
                 self.state_has_update -= 1
                 yield chat.StateUpdate(state=state_pkl)
-
-    # Putting this here in case we want to change to a less 
-    # hacky solution
-    def _state_has_update(self):
-        print("_state_has_update called")
-        self.state_has_update = self.num_child_replicas
     
     def StartupConsensus(self, request, context):
-        """The primary will use this to check if a replica has a later timestamp."""
+        """
+        A gPRC stub for sending a child replica's application state to its parents. The primary can then check
+        if a child replica has an application state that was modifed more recently than its own. This is necessary when 
+        rebooting to ensure that the primary has the most up-to-date state.
+
+        Args:
+            request (chat.ConsensusMessage): The message from child to parent replica, which contains the child application
+                state and the last modified timestamp.
+            context: The context of the request.
+
+        Returns:
+            chat.Empty
+        """
         if float(request.last_modified_ts) > self.app.last_modified_timestamp:
             users = pickle.loads(request.state)
             print(f"Setting app users to {users}")
             self.app = App(users=users)
-            self._state_has_update()
+            self._handle_state_update()
         
         return chat.Empty()
 
     def check_connection(self, request, context):
+        """gRPC stub that allows the client to check if the server is down."""
         return chat.Empty()
-
-    # create a user--> 3 cases: 
-    # (1) user is new, create a new account 
-    # (2) user is already logged in, refuse the login. 
-    # (3) user is already registered but not logged in. They are re-logged in and able to join.
+    
     def create_user(self, request, _context):
+        """
+        # create a user--> 3 cases: 
+        # (1) user is new, create a new account 
+        # (2) user is already logged in, refuse the login. 
+        # (3) user is already registered but not logged in. They are re-logged in and able to join.
+        """
         username = request.username
         print("Joining user: " + username)
         result = self.app.create_user(username)
@@ -163,9 +218,10 @@ class ChatServer(rpc.ChatServicer):
             response = "This username is already logged in. Please choose another one."
         else:
             response = str("Welcome back " + username + " !")
-        self.app.save_state()
-        # Set this flag to true so the thread knows to stream the updated state.
-        self._state_has_update()
+
+        # Write the new state to "database" and broadcast to child replicas
+        self._handle_state_update()
+
         return chat.ChatReply(message=response)
 
     # send message (passes to App class, which will handle either 
@@ -176,9 +232,9 @@ class ChatServer(rpc.ChatServicer):
         msg = request.message
         print("sending message from: " + from_user + " to: " + str(to_user))
         result = self.app.send_message(from_user, to_user, msg)
-        self.app.save_state()
-        # Set this flag to true so the thread knows to stream the updated state.
-        self._state_has_update()
+
+        # Write the new state to "database" and broadcast to child replicas
+        self._handle_state_update()
 
         return chat.ChatReply(message = result)
 
@@ -211,9 +267,10 @@ class ChatServer(rpc.ChatServicer):
         if response == True:
             print("User " + user_to_delete + " deleted by " + user_deleting)
             response = "Success."
-        self.app.save_state()
-        # Set this flag to true so the thread knows to stream the updated state.
-        self._state_has_update()
+        
+        # Write the new state to "database" and broadcast to child replicas
+        self._handle_state_update()
+
         return chat.ChatReply(message = response)
 
     # logout user
@@ -225,41 +282,8 @@ class ChatServer(rpc.ChatServicer):
             response = "SUCCESS"
         else: response = "Error logging out."
 
-        self.app.save_state()
+        # Write the new state to "database" and broadcast to child replicas
+        self._handle_state_update()
+        
         return chat.ChatReply(message = response)
 
-
-if __name__ == '__main__':
-    address = "0.0.0.0"
-    replicas = [Replica(address, 5002), Replica(address, 5003), Replica(address, 5004)]
-    # Simple loop to initialize ChatServer instances with the appropriate parent replicas
-    parents = []
-    servers = []
-    for repl in replicas:
-        # the workers is like the amount of threads that can be opened at the same time, when there are 10 clients connected
-        # then no more clients able to connect to the server.
-        server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))  # create a gRPC server
-        is_primary = (len(parents) == 0) # Set the first to the primary
-        rpc.add_ChatServiceServicer_to_server(ChatServer(parent_replicas=parents, is_primary=is_primary), server)  # register the server to gRPC
-        # gRPC basically manages all the threading and server responding logic, which is perfect!
-        print('Starting server. Listening...')
-        server.add_insecure_port('[::]:' + str(repl.port))
-        server.start()
-        servers.append(server)
-        parents.append(repl)
-
-    # for ind, server in enumerate(servers):
-    #     server.wait_for_termination()
-
-    curr_ind = 0
-    while curr_ind < 3:
-        time.sleep(5)
-        print(f"Stopping server {curr_ind}")
-        servers[curr_ind].stop(grace=None)
-        curr_ind += 1
-
-    # # Server starts in background (in another thread) so keep waiting
-    # # if we don't wait here the main thread will end, which will end all the child threads, and thus the threads
-    # # from the server won't continue to work and stop the server
-    # while True:
-    #     time.sleep(64 * 64 * 100)
